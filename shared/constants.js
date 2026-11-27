@@ -6,6 +6,11 @@
 export const PHYSICS = Object.freeze({
   /** Passo fixo da simulação (s). 1/120 = 120 atualizações por segundo. */
   FIXED_DT: 1 / 120,
+  /**
+   * Tempo máximo acumulado de uma vez no laço do jogo (s). Se um quadro demorar
+   * mais (ex.: aba voltou do segundo plano), o excesso é descartado para não travar.
+   */
+  MAX_ACCUMULATOR: 0.25,
 });
 
 /** Corpo do jogador. */
@@ -31,4 +36,10 @@ export const MOVE = Object.freeze({});
 export const NET = Object.freeze({
   /** Taxa de envio de estado do servidor (Hz, vezes por segundo). */
   TICK_RATE: 20,
+});
+
+/** Cena de demonstração da Fase 0 (sai quando o mapa real chegar). */
+export const DEMO = Object.freeze({
+  /** Velocidade de giro do cubo de teste (rad/s). PI/2 = um quarto de volta por segundo. */
+  CUBE_SPIN_SPEED: Math.PI / 2,
 });

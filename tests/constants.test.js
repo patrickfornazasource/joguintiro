@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as C from '../shared/constants.js';
 
-const GROUPS = ['PHYSICS', 'PLAYER', 'MOVE', 'NET'];
+const GROUPS = ['PHYSICS', 'PLAYER', 'MOVE', 'NET', 'DEMO'];
 
 test('todos os grupos existem e estão congelados', () => {
   for (const name of GROUPS) {
