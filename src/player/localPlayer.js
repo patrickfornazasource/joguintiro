@@ -1,9 +1,8 @@
 // Jogador local: junta a entrada de cada passo, roda a física compartilhada e guarda
 // a posição anterior e a atual para a câmera interpolar entre passos.
 // Sem Three.js e sem DOM: testável no Node (a câmera é atualizada em main.js).
-import { MOVE, PLAYER, VIEW } from '../../shared/constants.js';
+import { PLAYER, VIEW } from '../../shared/constants.js';
 import { createPlayer, stepPlayer, emptyInput } from '../../shared/physics/player.js';
-import { wishDir } from '../../shared/physics/move.js';
 import { createStepSmoother } from '../core/stepSmoothing.js';
 
 /** Chave do localStorage para a sensibilidade escolhida. */
@@ -109,12 +108,6 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       const input = buildInput(keys, yaw, pitch);
       player.yaw = yaw;
       player.pitch = pitch;
-      // Movimento PROVISÓRIO (F1-05): velocidade horizontal = direção x MOVE.WALK_SPEED.
-      // A F1-06 troca por aceleração e atrito dentro da física compartilhada.
-      const wish = wishDir(input);
-      player.vel.x = wish.x * MOVE.WALK_SPEED;
-      player.vel.z = wish.z * MOVE.WALK_SPEED;
-
       prev = { ...player.pos };
       stepPlayer(player, input, map, dt);
       if (player.pos.y < -PLAYER.RESPAWN_FALL_DEPTH) respawn();

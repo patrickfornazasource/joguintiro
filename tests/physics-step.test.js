@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { PHYSICS, PLAYER, MOVE } from '../shared/constants.js';
 import { box } from '../shared/maps/format.js';
 import { moveAndCollide } from '../shared/physics/collide.js';
-import { createPlayer, stepPlayer, emptyInput } from '../shared/physics/player.js';
+import { createPlayer, stepBody } from '../shared/physics/player.js';
 import { sandbox } from '../shared/maps/sandbox.js';
 import { createStepSmoother } from '../src/core/stepSmoothing.js';
 
@@ -13,8 +13,9 @@ const EPS = PHYSICS.CONTACT_EPSILON;
 const floor = box(0, -0.5, 0, 200, 1, 200);
 const mapOf = (...boxes) => ({ id: 't', name: 't', boxes: [floor, ...boxes], spawns: [] });
 
+/** Só gravidade e colisão (stepBody), sem atrito nem aceleração da F1-06. */
 function run(p, map, seconds) {
-  for (let i = 0; i < Math.round(seconds / DT); i++) stepPlayer(p, emptyInput(), map, DT);
+  for (let i = 0; i < Math.round(seconds / DT); i++) stepBody(p, map, DT);
   return p;
 }
 

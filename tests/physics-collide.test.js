@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { PHYSICS, PLAYER, MOVE } from '../shared/constants.js';
 import { box, BOX_TYPES as T } from '../shared/maps/format.js';
 import { overlaps, playerBox, moveAndCollide, isSolid } from '../shared/physics/collide.js';
-import { createPlayer, stepPlayer, emptyInput } from '../shared/physics/player.js';
+import { createPlayer, stepPlayer, stepBody, emptyInput } from '../shared/physics/player.js';
 import { sandbox } from '../shared/maps/sandbox.js';
 
 const DT = PHYSICS.FIXED_DT;
@@ -11,11 +11,11 @@ const R = PLAYER.RADIUS;
 const floor = box(0, -0.5, 0, 200, 1, 200);
 const mapOf = (...boxes) => ({ id: 't', name: 't', boxes: [floor, ...boxes], spawns: [] });
 
-/** Simula com gravidade e colisão. */
+/** Simula só gravidade e colisão (stepBody), sem atrito nem aceleração da F1-06. */
 function run(p, map, seconds, each) {
   const steps = Math.round(seconds / DT);
   for (let i = 0; i < steps; i++) {
-    stepPlayer(p, emptyInput(), map, DT);
+    stepBody(p, map, DT);
     each?.(p, i);
   }
   return p;
