@@ -60,6 +60,24 @@ if (import.meta.env.DEV) window.__input = input;
 const debug = createDebugPanel();
 debug.set('jogador', 'ainda não existe (Fase 1)');
 
+// Nomes das ações em português, só para exibir no painel.
+const ACTION_LABELS = {
+  forward: 'frente',
+  back: 'trás',
+  left: 'esquerda',
+  right: 'direita',
+  jump: 'pulo',
+  crouch: 'agachar',
+  dash: 'dash',
+  fire: 'tiro',
+  altFire: 'tiro alternativo',
+  scoreboard: 'placar',
+  weapon1: 'arma 1',
+  weapon2: 'arma 2',
+  weapon3: 'arma 3',
+};
+const keyText = (k) => (k ? `${k.code || '(sem código)'} / ${k.key === ' ' ? 'Espaço' : k.key}` : '-');
+
 const loop = createLoop({
   step: PHYSICS.FIXED_DT,
   // Lógica em passos fixos: o cubo gira na mesma velocidade em qualquer FPS.
@@ -73,7 +91,9 @@ const loop = createLoop({
     renderer.render(scene, camera);
     debug.set('chamadas de desenho', renderer.info.render.calls);
     debug.set('triângulos', renderer.info.render.triangles);
-    debug.set('teclas', ACTIONS.filter((a) => input.isDown(a)));
+    debug.set('teclas', ACTIONS.filter((a) => input.isDown(a)).map((a) => ACTION_LABELS[a] ?? a));
+    // Diagnóstico: a última tecla que o navegador entregou (código físico / caractere).
+    debug.set('última tecla', keyText(input.lastKey));
     debug.set('mouse travado', input.isLocked() ? 'sim' : 'não');
     debug.frame(performance.now());
     // Avisa o script de captura (npm run shot) que o primeiro quadro já foi desenhado.
