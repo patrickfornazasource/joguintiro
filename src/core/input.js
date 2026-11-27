@@ -36,6 +36,43 @@ export const BINDINGS = Object.freeze({
 export const ACTIONS = Object.freeze(Object.keys(BINDINGS));
 
 /**
+ * Reserva para quando o navegador não informa a tecla física (KeyboardEvent.code vazio),
+ * o que acontece com alguns teclados virtuais, acesso remoto e automação.
+ * Usa o caractere (KeyboardEvent.key) para achar a tecla equivalente.
+ */
+const KEY_FALLBACK = Object.freeze({
+  w: 'KeyW',
+  a: 'KeyA',
+  s: 'KeyS',
+  d: 'KeyD',
+  c: 'KeyC',
+  ' ': 'Space',
+  spacebar: 'Space',
+  control: 'ControlLeft',
+  shift: 'ShiftLeft',
+  tab: 'Tab',
+  1: 'Digit1',
+  2: 'Digit2',
+  3: 'Digit3',
+});
+
+/** Código da tecla de um evento: o físico (code) ou, se faltar, o equivalente pelo caractere. */
+export function resolveCode(e) {
+  if (e.code && e.code !== 'Unidentified') return e.code;
+  return KEY_FALLBACK[String(e.key ?? '').toLowerCase()] ?? '';
+}
+
+/**
+ * Teclas modificadoras e o indicador que todo evento traz (shiftKey, ctrlKey).
+ * Se o indicador diz "solto", a tecla é solta mesmo que o navegador tenha perdido o
+ * evento de soltar (acontece no Windows, por exemplo usando os dois Shift).
+ */
+const MODIFIER_FLAGS = [
+  ['shiftKey', ['ShiftLeft', 'ShiftRight']],
+  ['ctrlKey', ['ControlLeft', 'ControlRight']],
+];
+
+/**
  * Estado de entrada sem DOM.
  * @param {Record<string, string[]>} [bindings]
  */
@@ -121,18 +158,31 @@ export function attachInput({ canvas, target = window, doc = document, bindings 
   const state = createInputState(bindings);
   const isLocked = () => doc.pointerLockElement === canvas;
 
+  let lastKey = null;
+  const syncModifiers = (e) => {
+    for (const [flag, codes] of MODIFIER_FLAGS) {
+      if (e[flag] === false) codes.forEach((c) => state.release(c));
+    }
+  };
+
   const onKeyDown = (e) => {
-    if (!state.isBound(e.code)) return;
+    syncModifiers(e);
+    const code = resolveCode(e);
+    lastKey = { code: e.code, key: e.key };
+    if (!state.isBound(code)) return;
     // Evita rolagem (Espaço), troca de foco (Tab) e atalhos com Ctrl quando possível.
     e.preventDefault();
-    state.press(e.code);
+    state.press(code);
   };
   const onKeyUp = (e) => {
-    if (!state.isBound(e.code)) return;
+    syncModifiers(e);
+    const code = resolveCode(e);
+    if (!state.isBound(code)) return;
     e.preventDefault();
-    state.release(e.code);
+    state.release(code);
   };
   const onCanvasMouseDown = (e) => {
+    syncModifiers(e);
     if (!isLocked()) {
       // O primeiro clique só trava o ponteiro, não conta como tiro.
       e.preventDefault();
@@ -144,6 +194,7 @@ export function attachInput({ canvas, target = window, doc = document, bindings 
   };
   const onMouseUp = (e) => state.release(`Mouse${e.button}`);
   const onMouseMove = (e) => {
+    syncModifiers(e);
     if (isLocked()) state.addMouseDelta(e.movementX, e.movementY);
   };
   const onContextMenu = (e) => e.preventDefault();
@@ -174,6 +225,10 @@ export function attachInput({ canvas, target = window, doc = document, bindings 
     consumeMouseDelta: state.consumeMouseDelta,
     endStep: state.endStep,
     isLocked,
+    /** Última tecla recebida ({ code, key }), para o painel de depuração. */
+    get lastKey() {
+      return lastKey;
+    },
     detach() {
       target.removeEventListener('keydown', onKeyDown);
       target.removeEventListener('keyup', onKeyUp);
