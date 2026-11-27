@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PHYSICS, PLAYER, DEMO } from '../shared/constants.js';
 import { createLoop } from './core/loop.js';
+import { attachInput } from './core/input.js';
 
 const canvas = document.getElementById('game');
 
@@ -44,11 +45,18 @@ function onResize() {
 }
 window.addEventListener('resize', onResize);
 
+// Teclado e mouse. Clique na tela trava o ponteiro; Esc solta.
+const input = attachInput({ canvas });
+// Em desenvolvimento, deixa a entrada acessível no console do navegador para depuração.
+if (import.meta.env.DEV) window.__input = input;
+
 const loop = createLoop({
   step: PHYSICS.FIXED_DT,
   // Lógica em passos fixos: o cubo gira na mesma velocidade em qualquer FPS.
   update(dt) {
     cube.rotation.y += DEMO.CUBE_SPIN_SPEED * dt;
+    // Fim do passo: os apertos (pressed) deste passo já foram vistos.
+    input.endStep();
   },
   render() {
     renderer.render(scene, camera);
