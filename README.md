@@ -6,7 +6,7 @@ Movement shooter multiplayer no navegador, para 2 a 8 amigos, em subsolos e luga
 
 ## Status
 
-Fase 0 (Fundação) em andamento. Já existe uma tela 3D básica (chão cinza e um cubo) e um servidor que liga junto com o jogo. Ainda não dá para jogar: andar, pular e atirar vêm nas próximas fases.
+Fase 0 (Fundação) concluída, Fase 1 (Movimento) em andamento. Já existe uma tela 3D básica (chão cinza e um cubo), um servidor que liga junto com o jogo, leitura de teclado e mouse, e um painel de depuração (tecla F3). Ainda não dá para jogar: andar, pular e atirar vêm nas próximas tarefas.
 
 ## Como rodar no seu computador
 
