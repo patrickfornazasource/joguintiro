@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "concurrently -k -n servidor,cliente -c magenta,cyan \"npm:server\" \"npm:client\"",
     "client": "vite --host",
     "server": "node --watch server/index.js",
     "start": "node server/index.js",
@@ -14,6 +15,7 @@
     "ws": "^8.23.1"
   },
   "devDependencies": {
+    "concurrently": "^10.0.7",
     "vite": "^6.0.0"
   }
 }
