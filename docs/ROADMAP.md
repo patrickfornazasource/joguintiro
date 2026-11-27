@@ -26,7 +26,7 @@ Objetivo: projeto que roda no navegador com um comando, com testes automáticos 
 - [x] **[F0-04](tarefas/F0-04.md)** Pasta shared e constantes centralizadas
 - [x] **[F0-05](tarefas/F0-05.md)** Testes automáticos de lógica
 - [x] **[F0-06](tarefas/F0-06.md)** Captura de tela automática
-- [ ] **[F0-07](tarefas/F0-07.md)** Verificação automática no GitHub (CI)
+- [x] **[F0-07](tarefas/F0-07.md)** Verificação automática no GitHub (CI)
 - [x] **[F0-08](tarefas/F0-08.md)** Laço do jogo com passo fixo
 - [ ] **[F0-09](tarefas/F0-09.md)** Leitura de teclado e mouse
 - [ ] **[F0-10](tarefas/F0-10.md)** Painel de depuração (F3)
