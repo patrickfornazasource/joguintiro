@@ -37,6 +37,13 @@ export const MOVE = Object.freeze({
   GRAVITY: 24,
   /** Velocidade máxima de queda (m/s). */
   MAX_FALL_SPEED: 50,
+  /** Altura máxima de degrau que o jogador sobe só andando (m). Acima disso, bloqueia. */
+  STEP_HEIGHT: 0.45,
+  /**
+   * Rapidez com que a câmera alcança a nova altura depois de subir um degrau (1/s).
+   * A física sobe de uma vez; só a imagem é suavizada. Maior = mais rápido.
+   */
+  STEP_SMOOTH_RATE: 15,
 });
 
 /** Rede. */
