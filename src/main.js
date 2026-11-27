@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PHYSICS, PLAYER } from '../shared/constants.js';
 
 const canvas = document.getElementById('game');
 
@@ -47,3 +48,5 @@ function animate() {
   requestAnimationFrame(animate);
 }
 animate();
+
+console.info(`LUZ NEGRA: constantes carregadas (passo ${PHYSICS.FIXED_DT.toFixed(5)} s, altura ${PLAYER.HEIGHT} m)`);
