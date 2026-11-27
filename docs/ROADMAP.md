@@ -21,7 +21,7 @@ Objetivo: projeto que roda no navegador com um comando, com testes automáticos 
 **Fichas detalhadas:** [`tarefas/`](tarefas/README.md) (dependências, ordem e paralelismo).
 
 - [x] **[F0-01](tarefas/F0-01.md)** Estrutura do projeto e cena 3D vazia
-- [ ] **[F0-02](tarefas/F0-02.md)** Servidor mínimo com WebSocket
+- [x] **[F0-02](tarefas/F0-02.md)** Servidor mínimo com WebSocket
 - [ ] **[F0-03](tarefas/F0-03.md)** Comando único para rodar tudo
 - [ ] **[F0-04](tarefas/F0-04.md)** Pasta shared e constantes centralizadas
 - [ ] **[F0-05](tarefas/F0-05.md)** Testes automáticos de lógica
