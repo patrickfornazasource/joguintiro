@@ -3,6 +3,7 @@
 
 const CONTROLS = [
   ['W A S D', 'andar'],
+  ['Espaço', 'pular (segure para emendar)'],
   ['Mouse', 'olhar'],
   ['F3', 'painel de informações'],
   ['Esc', 'soltar o mouse'],

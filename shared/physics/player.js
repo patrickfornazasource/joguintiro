@@ -51,6 +51,12 @@ export function createPlayer(spawn) {
     groundType: null,
     /** Último contato lateral neste passo: { normal: {x,y,z}, type }, ou null (usado na F1-11). */
     contact: null,
+    /** Tempo que ainda resta de tolerância de borda (s): COYOTE_TIME ao sair do chão, contando para baixo. */
+    coyote: 0,
+    /** Tempo que ainda resta de um aperto de pulo antecipado (s). */
+    jumpBuffer: 0,
+    /** Acontecimentos deste passo, para som e efeitos: [{ type: 'jump' }, ...]. Zerado a cada passo. */
+    events: [],
     /** Está agachado ou deslizando? (F1-10) */
     crouching: false,
     /** Altura atual do corpo (m): PLAYER.HEIGHT em pé, PLAYER.CROUCH_HEIGHT agachado. */
@@ -70,7 +76,8 @@ export function createPlayer(spawn) {
 
 /**
  * Avança o jogador um passo fixo de simulação.
- * No chão: atrito e aceleração na direção das teclas (F1-06). Depois: gravidade
+ * Pulo (F1-07): no chão, na tolerância de borda ou com aperto antecipado. No chão:
+ * atrito (menos no passo do pulo) e aceleração na direção das teclas (F1-06). Depois: gravidade
  * (com limite de queda) e movimento pela velocidade, parando nas caixas do mapa.
  * @param {ReturnType<typeof createPlayer>} p estado do jogador (alterado no lugar)
  * @param {ReturnType<typeof emptyInput>} input entrada deste passo
@@ -79,16 +86,38 @@ export function createPlayer(spawn) {
  * @returns o mesmo objeto p
  */
 export function stepPlayer(p, input, map, dt) {
+  p.events = [];
+
+  // Relógios do pulo (F1-07): tolerância de borda e pulo antecipado.
+  p.coyote = p.onGround ? MOVE.COYOTE_TIME : Math.max(0, p.coyote - dt);
+  p.jumpBuffer = input.jumpPressed ? MOVE.JUMP_BUFFER : Math.max(0, p.jumpBuffer - dt);
+
+  // Pula se: está no chão (ou acabou de sair da borda) E apertou agora ou há pouco,
+  // ou está no chão segurando o pulo (bunny hop: pula de novo ao pousar).
+  const canJump = p.onGround || p.coyote > 0;
+  const wantsJump = p.jumpBuffer > 0 || (input.jump && p.onGround);
+  const jumping = canJump && wantsJump;
+
   // No chão (estado do passo anterior): atrito e aceleração na direção das teclas (F1-06).
+  // No passo do pulo não há atrito: quem emenda pulos não perde velocidade.
   // No ar a velocidade horizontal se mantém (controle aéreo vem na F1-08).
-  if (p.onGround) {
-    const v = applyFriction(p.vel, MOVE.FRICTION, MOVE.STOP_SPEED, dt);
+  if (p.onGround || jumping) {
+    const v = jumping ? { ...p.vel } : applyFriction(p.vel, MOVE.FRICTION, MOVE.STOP_SPEED, dt);
     const wish = wishDir(input);
     const amount = Math.hypot(wish.x, wish.z); // 0 a 1 (teclado: 0 ou 1)
     p.vel = amount > 0
       ? accelerate(v, { x: wish.x / amount, y: 0, z: wish.z / amount }, MOVE.WALK_SPEED * amount, MOVE.GROUND_ACCEL, dt)
       : v;
   }
+
+  if (jumping) {
+    p.vel.y = MOVE.JUMP_SPEED;
+    p.onGround = false;
+    p.coyote = 0; // a tolerância de borda vale para um pulo só
+    p.jumpBuffer = 0;
+    p.events.push({ type: 'jump' });
+  }
+
   return stepBody(p, map, dt);
 }
 
@@ -99,9 +128,14 @@ export function stepPlayer(p, input, map, dt) {
 export function stepBody(p, map, dt) {
   // Gravidade sempre puxa, sem passar da velocidade máxima de queda. No chão, a colisão
   // zera a queda a cada passo; assim onGround fica estável (não pisca entre passos).
-  p.vel.y = Math.max(p.vel.y - MOVE.GRAVITY * dt, -MOVE.MAX_FALL_SPEED);
-  // Integração semi-implícita: primeiro a velocidade, depois a posição (mais estável),
-  // parando nas caixas do mapa (F1-03).
-  moveAndCollide(p, map, dt);
+  const before = p.vel.y;
+  const after = Math.max(before - MOVE.GRAVITY * dt, -MOVE.MAX_FALL_SPEED);
+  // Na vertical, a posição anda pela média da velocidade no passo (exato para gravidade
+  // constante): a altura do pulo bate com a fórmula v² / 2g (F1-07).
+  const average = (before + after) / 2;
+  p.vel.y = average;
+  moveAndCollide(p, map, dt); // para nas caixas do mapa (F1-03)
+  // Se nada zerou a velocidade vertical (chão, teto, degrau), ela termina o passo em `after`.
+  if (p.vel.y === average) p.vel.y = after;
   return p;
 }

@@ -54,6 +54,12 @@ export const MOVE = Object.freeze({
   FRICTION: 7,
   /** Abaixo desta velocidade (m/s), o atrito freia como se fosse esta: para de vez, sem "patinar". */
   STOP_SPEED: 3,
+  /** Velocidade para cima no pulo (m/s). Altura máxima = JUMP_SPEED² / (2 x GRAVITY), cerca de 1,33 m. */
+  JUMP_SPEED: 8,
+  /** Tolerância de borda (s): ainda dá para pular este tempo depois de sair do chão. */
+  COYOTE_TIME: 0.1,
+  /** Pulo antecipado (s): apertar até este tempo antes de tocar o chão também pula. */
+  JUMP_BUFFER: 0.1,
 });
 
 /** Câmera e mouse. */
