@@ -1,0 +1,42 @@
+# Automação: bots trabalhando no projeto
+
+Objetivo: agentes de IA executam o roadmap continuamente, uma tarefa por vez, e o dono do projeto entra só para **testar e aprovar**.
+
+## O ciclo de cada bot
+
+1. **Ler** `CLAUDE.md`, `docs/GDD.md` e `docs/ROADMAP.md`.
+2. **Escolher** a primeira tarefa `[ ]` do roadmap cujas dependências estão `[x]`, **na fase atual**. Nunca pular para uma fase cujo marco com 🧑 ainda não foi aprovado.
+3. **Marcar** a tarefa como `[~]` com o nome do branch.
+4. **Implementar** num branch próprio (`bot/F1-05-air-strafe`).
+5. **Verificar:** `npm test`, `npm run build` e, se mexeu no visual, `npm run shot` (captura de tela anexada ao PR).
+6. **Abrir PR** com: o que foi feito, como testar em 3 passos simples (sem jargão), captura de tela, e o critério "Pronto quando" marcado.
+7. **Parar.** Um bot nunca aprova nem mescla o próprio PR.
+
+## Papéis
+
+| Papel | Quem | Faz o quê |
+|---|---|---|
+| Dono do projeto | Você | Joga, aprova marcos 🧑, decide o que fica e o que sai do GDD. |
+| Coordenador | Claude (sessão principal) | Mantém GDD e roadmap, quebra tarefas, revisa PRs dos bots, prepara os testes humanos. |
+| Bots executores | Sessões agendadas | Pegam uma tarefa, implementam, abrem PR. |
+
+## Regras de segurança do processo
+
+- **Uma tarefa por PR.** PR pequeno é fácil de revisar e de desfazer.
+- **Nada vai para o `main` sem revisão.** Os PRs dos bots são revisados pelo coordenador e o dono aprova a mesclagem.
+- **Nenhum bot muda o GDD** sozinho. Se achar que uma regra de design não funciona, abre uma issue com a proposta.
+- **Testes nunca são apagados ou desligados** para fazer o CI passar.
+- **Constantes de balanceamento** só mudam em PR próprio, com justificativa.
+- **Custo:** cada execução de bot consome uso da sua assinatura. Começar com poucas execuções por dia e aumentar se o ritmo de revisão acompanhar. Bot rodando sem parar produz PRs mais rápido do que alguém consegue testar.
+
+## Ritmo sugerido
+
+| Fase do projeto | Frequência dos bots | Por quê |
+|---|---|---|
+| F0 a F2 | 2 a 3 execuções por dia | O movimento precisa do seu teste a cada poucos dias. |
+| F3 a F6 | 4 a 6 execuções por dia | Muitas tarefas independentes (arte, mapas, rede). |
+| F7 em diante | Conforme necessidade | Polimento depende de feedback de partidas reais. |
+
+## Plataforma dos bots
+
+Em aberto: o dono do projeto mencionou "openbots". A definir qual ferramenta vai rodar os bots. Opção já disponível neste ambiente: **tarefas agendadas do Claude Code**, que abrem uma sessão nova neste repositório no horário marcado, seguem o ciclo acima e deixam um PR pronto.
