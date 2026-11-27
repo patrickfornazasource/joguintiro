@@ -5,7 +5,12 @@
 // com a base nos pés (p.pos). O movimento é resolvido eixo a eixo: X, depois Z, depois Y.
 // Se o deslocamento de um passo for maior que o raio, ele é dividido em sub-passos
 // para o jogador não atravessar paredes finas em alta velocidade.
-import { PHYSICS, PLAYER } from '../constants.js';
+//
+// Degraus (F1-04): andando no chão, se o bloco que barrou tiver o topo até
+// MOVE.STEP_HEIGHT acima dos pés e houver espaço livre lá em cima, o jogador é
+// colocado em cima dele em vez de parar. A física sobe de uma vez; a câmera suaviza
+// (src/core/stepSmoothing.js).
+import { MOVE, PHYSICS, PLAYER } from '../constants.js';
 import { BOX_TYPES } from '../maps/format.js';
 
 /**
@@ -43,12 +48,50 @@ const NORMALS = {
   z: (dir) => ({ x: 0, y: 0, z: -dir }),
 };
 
-/** Move num eixo e empurra para fora de qualquer caixa atravessada. Devolve true se bateu. */
-function moveAxis(p, boxes, axis, delta) {
+/** Alguma caixa sobrepõe o jogador na posição atual? */
+function blocked(p, boxes) {
+  const pb = playerBox(p);
+  return boxes.some((b) => overlaps(pb, b));
+}
+
+/**
+ * Tenta subir no(s) bloco(s) que barraram o movimento horizontal.
+ * Só vale se todos têm o topo até MOVE.STEP_HEIGHT acima dos pés e se o jogador
+ * cabe em cima. Devolve true se subiu.
+ */
+function tryStepUp(p, boxes, hits) {
+  const top = Math.max(...hits.map((b) => b.max.y));
+  const rise = top - p.pos.y;
+  if (!(rise > 0 && rise <= MOVE.STEP_HEIGHT)) return false;
+  const oldY = p.pos.y;
+  p.pos.y = top;
+  if (blocked(p, boxes)) {
+    p.pos.y = oldY; // sem espaço acima (teto baixo ou parede alta atrás)
+    return false;
+  }
+  const ground = hits.find((b) => b.max.y === top);
+  p.onGround = true;
+  p.groundType = ground.type;
+  if (p.vel.y < 0) p.vel.y = 0;
+  return true;
+}
+
+/**
+ * Move num eixo e empurra para fora de qualquer caixa atravessada. Devolve true se bateu.
+ * @param {boolean} canStep pode subir degraus (estava no chão)
+ */
+function moveAxis(p, boxes, axis, delta, canStep) {
   if (delta === 0) return false;
   p.pos[axis] += delta;
   const dir = Math.sign(delta);
   const r = PLAYER.RADIUS;
+
+  if (axis !== 'y' && canStep) {
+    const pb = playerBox(p);
+    const hits = boxes.filter((b) => overlaps(pb, b));
+    if (hits.length && tryStepUp(p, boxes, hits)) return false;
+  }
+
   let hit = false;
   for (const b of boxes) {
     if (!overlaps(playerBox(p), b)) continue;
@@ -79,6 +122,7 @@ function moveAxis(p, boxes, axis, delta) {
  * @param {number} dt (s)
  */
 export function moveAndCollide(p, map, dt) {
+  const wasOnGround = p.onGround;
   p.onGround = false;
   p.groundType = null;
   p.contact = null;
@@ -92,7 +136,9 @@ export function moveAndCollide(p, map, dt) {
   for (let i = 0; i < subSteps; i++) {
     for (const axis of ['x', 'z', 'y']) {
       // Depois de bater num eixo, para de andar nele no resto deste passo.
-      if (moveAxis(p, boxes, axis, part[axis])) part[axis] = 0;
+      // Degraus só andando: estava no chão no passo anterior ou pousou/subiu neste.
+      const canStep = (wasOnGround || p.onGround) && p.vel.y <= 0;
+      if (moveAxis(p, boxes, axis, part[axis], canStep)) part[axis] = 0;
     }
   }
   return p;
