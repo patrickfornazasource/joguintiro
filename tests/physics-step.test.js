@@ -156,6 +156,20 @@ test('folga de 0,0001 m no eixo X: invadir menos que a folga não bate; mais, ba
   assert.ok(Math.abs(b.pos.x - (1 - R)) < 1e-12);
 });
 
+test('folga de 0,0001 m no eixo X, do outro lado (indo para -x: a.min.x < b.max.x)', () => {
+  const wall = { min: { x: -2, y: 0, z: -2 }, max: { x: -1, y: 2, z: 2 }, type: 'solid' };
+  const start = -1 + R + 0.1; // costas do jogador a 0,1 m da parede
+  const a = createPlayer({ x: start, y: 0, z: 0 });
+  a.vel = { x: -(0.1 + EPS / 2) / DT, y: 0, z: 0 };
+  moveAndCollide(a, { boxes: [wall] }, DT);
+  assert.equal(a.contact, null, 'metade da folga: não bate');
+  const b = createPlayer({ x: start, y: 0, z: 0 });
+  b.vel = { x: -(0.1 + EPS * 2) / DT, y: 0, z: 0 };
+  moveAndCollide(b, { boxes: [wall] }, DT);
+  assert.deepEqual(b.contact.normal, { x: 1, y: 0, z: 0 });
+  assert.ok(Math.abs(b.pos.x - (-1 + R)) < 1e-12);
+});
+
 test('câmera: ao subir um degrau, a imagem começa embaixo e alcança a física', () => {
   const s = createStepSmoother();
   assert.equal(s.update(0, true, DT), 0);
