@@ -29,8 +29,13 @@ export const PLAYER = Object.freeze({
   MAX_HEALTH: 100,
 });
 
-/** Movimento: valores preenchidos nas tarefas da Fase 1 (F1-06 em diante). */
-export const MOVE = Object.freeze({});
+/** Movimento: valores preenchidos ao longo das tarefas da Fase 1. */
+export const MOVE = Object.freeze({
+  /** Gravidade (m/s²). Mais forte que a real (9,8) para pulos rápidos e secos. */
+  GRAVITY: 24,
+  /** Velocidade máxima de queda (m/s). */
+  MAX_FALL_SPEED: 50,
+});
 
 /** Rede. */
 export const NET = Object.freeze({
