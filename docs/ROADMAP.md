@@ -40,7 +40,7 @@ Objetivo: projeto que roda no navegador com um comando, com testes automáticos 
 
 Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes** de existir tiro.
 
-- [ ] **[F1-01](tarefas/F1-01.md)** Formato de mapa e mapa cinza inicial
+- [x] **[F1-01](tarefas/F1-01.md)** Formato de mapa e mapa cinza inicial
 - [ ] **[F1-02](tarefas/F1-02.md)** Estado do jogador e gravidade
 - [ ] **[F1-03](tarefas/F1-03.md)** Colisão com o cenário
 - [ ] **[F1-04](tarefas/F1-04.md)** Subir degraus andando
