@@ -3,6 +3,9 @@ import { PHYSICS, PLAYER, DEMO } from '../shared/constants.js';
 import { createLoop } from './core/loop.js';
 import { attachInput, ACTIONS } from './core/input.js';
 import { createDebugPanel } from './ui/debug.js';
+import { getMap } from '../shared/maps/index.js';
+import { validateMap } from '../shared/maps/format.js';
+import { createMapMeshes } from './world/mapRenderer.js';
 
 const canvas = document.getElementById('game');
 
@@ -13,17 +16,19 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x101014);
 
-const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 500);
-camera.position.set(4, 3, 6);
-camera.lookAt(0, 0.5, 0);
+// Mapa escolhido por ?mapa=<id> no endereço (padrão: sandbox).
+const mapId = new URLSearchParams(window.location.search).get('mapa');
+const map = getMap(mapId);
+if (mapId && mapId !== map.id) console.warn(`Mapa "${mapId}" não existe; usando "${map.id}".`);
+const check = validateMap(map);
+if (!check.ok) throw new Error(`Mapa "${map.id}" inválido: ${check.errors.join('; ')}`);
+scene.add(createMapMeshes(map));
+console.info(`LUZ NEGRA: mapa "${map.name}" (${map.boxes.length} caixas)`);
 
-// Chão cinza 40x40
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(40, 40),
-  new THREE.MeshStandardMaterial({ color: 0x808080 }),
-);
-floor.rotation.x = -Math.PI / 2;
-scene.add(floor);
+// Câmera de visão geral do mapa (até existir o jogador, na F1-05).
+const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.set(0, 30, 24);
+camera.lookAt(0, 0, -4);
 
 // Um cubo
 const cube = new THREE.Mesh(
