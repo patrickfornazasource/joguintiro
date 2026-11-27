@@ -51,11 +51,12 @@ test('velocidade de queda não passa de MOVE.MAX_FALL_SPEED', () => {
 });
 
 test('pulo para cima sobe e desce de volta (lançamento vertical)', () => {
-  const p = createPlayer({ x: 0, y: 0, z: 0 });
+  // Começa no ar (y = 50): desde a F1-03 o chão do mapa pararia a queda em y = 0.
+  const p = createPlayer({ x: 0, y: 50, z: 0 });
   p.vel.y = 12; // sobe até ~3 m e volta em 2·v/g = 1 s
   run(p, 2 * 12 / MOVE.GRAVITY);
   near(p.vel.y, -12, 0.02, 'volta com a mesma velocidade');
-  assert.ok(Math.abs(p.pos.y) < 0.2, `volta perto da altura inicial: ${p.pos.y}`);
+  assert.ok(Math.abs(p.pos.y - 50) < 0.2, `volta perto da altura inicial: ${p.pos.y}`);
 });
 
 test('velocidade horizontal move o jogador e não muda sozinha (sem atrito ainda)', () => {

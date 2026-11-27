@@ -42,7 +42,7 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 
 - [x] **[F1-01](tarefas/F1-01.md)** Formato de mapa e mapa cinza inicial
 - [x] **[F1-02](tarefas/F1-02.md)** Estado do jogador e gravidade
-- [ ] **[F1-03](tarefas/F1-03.md)** Colisão com o cenário
+- [x] **[F1-03](tarefas/F1-03.md)** Colisão com o cenário
 - [ ] **[F1-04](tarefas/F1-04.md)** Subir degraus andando
 - [ ] **[F1-05](tarefas/F1-05.md)** Câmera em primeira pessoa e andar pelo mapa
 - [ ] **[F1-06](tarefas/F1-06.md)** Aceleração no chão e atrito

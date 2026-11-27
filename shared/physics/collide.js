@@ -1,0 +1,99 @@
+// Colisão do jogador com o mapa (caixas alinhadas aos eixos, AABB).
+// Código puro (sem Three.js, sem DOM).
+//
+// O jogador é uma caixa: largura 2 x PLAYER.RADIUS em x e z, altura p.height,
+// com a base nos pés (p.pos). O movimento é resolvido eixo a eixo: X, depois Z, depois Y.
+// Se o deslocamento de um passo for maior que o raio, ele é dividido em sub-passos
+// para o jogador não atravessar paredes finas em alta velocidade.
+import { PHYSICS, PLAYER } from '../constants.js';
+import { BOX_TYPES } from '../maps/format.js';
+
+/**
+ * Duas caixas se sobrepõem? Caixas que só se encostam (até CONTACT_EPSILON) não contam.
+ * @param {{min:{x,y,z}, max:{x,y,z}}} a
+ * @param {{min:{x,y,z}, max:{x,y,z}}} b
+ */
+export function overlaps(a, b, eps = PHYSICS.CONTACT_EPSILON) {
+  return (
+    a.min.x < b.max.x - eps &&
+    a.max.x > b.min.x + eps &&
+    a.min.y < b.max.y - eps &&
+    a.max.y > b.min.y + eps &&
+    a.min.z < b.max.z - eps &&
+    a.max.z > b.min.z + eps
+  );
+}
+
+/** Caixa do jogador na posição atual. */
+export function playerBox(p) {
+  const r = PLAYER.RADIUS;
+  return {
+    min: { x: p.pos.x - r, y: p.pos.y, z: p.pos.z - r },
+    max: { x: p.pos.x + r, y: p.pos.y + p.height, z: p.pos.z + r },
+  };
+}
+
+/** A caixa participa da colisão? Tinta UV inativa (active: false) é ignorada. */
+export function isSolid(b) {
+  return !(b.type === BOX_TYPES.UV && b.active === false);
+}
+
+const NORMALS = {
+  x: (dir) => ({ x: -dir, y: 0, z: 0 }),
+  z: (dir) => ({ x: 0, y: 0, z: -dir }),
+};
+
+/** Move num eixo e empurra para fora de qualquer caixa atravessada. Devolve true se bateu. */
+function moveAxis(p, boxes, axis, delta) {
+  if (delta === 0) return false;
+  p.pos[axis] += delta;
+  const dir = Math.sign(delta);
+  const r = PLAYER.RADIUS;
+  let hit = false;
+  for (const b of boxes) {
+    if (!overlaps(playerBox(p), b)) continue;
+    hit = true;
+    if (axis === 'y') {
+      if (dir < 0) {
+        p.pos.y = b.max.y; // pés em cima da caixa
+        p.onGround = true;
+        p.groundType = b.type;
+      } else {
+        p.pos.y = b.min.y - p.height; // cabeça embaixo da caixa
+      }
+      p.vel.y = 0;
+    } else {
+      p.pos[axis] = dir > 0 ? b.min[axis] - r : b.max[axis] + r;
+      p.vel[axis] = 0;
+      p.contact = { normal: NORMALS[axis](dir), type: b.type };
+    }
+  }
+  return hit;
+}
+
+/**
+ * Move o jogador pela velocidade durante dt, parando nas caixas do mapa.
+ * Atualiza p.pos, p.vel, p.onGround, p.groundType e p.contact.
+ * @param {object} p jogador (shared/physics/player.js)
+ * @param {{ boxes: Array }} map
+ * @param {number} dt (s)
+ */
+export function moveAndCollide(p, map, dt) {
+  p.onGround = false;
+  p.groundType = null;
+  p.contact = null;
+
+  const boxes = (map?.boxes ?? []).filter(isSolid);
+  const d = { x: p.vel.x * dt, y: p.vel.y * dt, z: p.vel.z * dt };
+  const largest = Math.max(Math.abs(d.x), Math.abs(d.y), Math.abs(d.z));
+  const subSteps = Math.max(1, Math.ceil(largest / PLAYER.RADIUS));
+  const part = { x: d.x / subSteps, y: d.y / subSteps, z: d.z / subSteps };
+
+  for (let i = 0; i < subSteps; i++) {
+    for (const axis of ['x', 'z', 'y']) {
+      // Depois de bater num eixo, para de andar nele no resto deste passo.
+      if (moveAxis(p, boxes, axis, part[axis])) part[axis] = 0;
+    }
+  }
+  return p;
+}

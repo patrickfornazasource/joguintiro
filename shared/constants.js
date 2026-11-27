@@ -6,6 +6,8 @@
 export const PHYSICS = Object.freeze({
   /** Passo fixo da simulação (s). 1/120 = 120 atualizações por segundo. */
   FIXED_DT: 1 / 120,
+  /** Folga da colisão (m): caixas que só se encostam não contam como sobrepostas. */
+  CONTACT_EPSILON: 0.0001,
   /**
    * Tempo máximo acumulado de uma vez no laço do jogo (s). Se um quadro demorar
    * mais (ex.: aba voltou do segundo plano), o excesso é descartado para não travar.
