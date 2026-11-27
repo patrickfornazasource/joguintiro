@@ -45,6 +45,8 @@ window.addEventListener('resize', onResize);
 
 function animate() {
   renderer.render(scene, camera);
+  // Avisa o script de captura (npm run shot) que o primeiro quadro já foi desenhado.
+  if (!window.__READY) window.__READY = true;
   requestAnimationFrame(animate);
 }
 animate();
