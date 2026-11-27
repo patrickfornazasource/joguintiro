@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { PHYSICS, PLAYER, DEMO } from '../shared/constants.js';
 import { createLoop } from './core/loop.js';
-import { attachInput } from './core/input.js';
+import { attachInput, ACTIONS } from './core/input.js';
+import { createDebugPanel } from './ui/debug.js';
 
 const canvas = document.getElementById('game');
 
@@ -50,6 +51,10 @@ const input = attachInput({ canvas });
 // Em desenvolvimento, deixa a entrada acessível no console do navegador para depuração.
 if (import.meta.env.DEV) window.__input = input;
 
+// Painel de depuração: F3 liga e desliga; ?debug=1 no endereço já abre ligado.
+const debug = createDebugPanel();
+debug.set('jogador', 'ainda não existe (Fase 1)');
+
 const loop = createLoop({
   step: PHYSICS.FIXED_DT,
   // Lógica em passos fixos: o cubo gira na mesma velocidade em qualquer FPS.
@@ -57,9 +62,15 @@ const loop = createLoop({
     cube.rotation.y += DEMO.CUBE_SPIN_SPEED * dt;
     // Fim do passo: os apertos (pressed) deste passo já foram vistos.
     input.endStep();
+    debug.step();
   },
   render() {
     renderer.render(scene, camera);
+    debug.set('chamadas de desenho', renderer.info.render.calls);
+    debug.set('triângulos', renderer.info.render.triangles);
+    debug.set('teclas', ACTIONS.filter((a) => input.isDown(a)));
+    debug.set('mouse travado', input.isLocked() ? 'sim' : 'não');
+    debug.frame(performance.now());
     // Avisa o script de captura (npm run shot) que o primeiro quadro já foi desenhado.
     if (!window.__READY) window.__READY = true;
   },
