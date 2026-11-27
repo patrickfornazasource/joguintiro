@@ -1,4 +1,6 @@
-# Direção de Arte: Neon Subsolo
+# Direção de Arte: Neon Abandonado
+
+> **Regra de ouro: legibilidade antes de clima.** As fotos de referência dão a paleta e a energia (pichação fluorescente, luz negra, LED), **não o nível de escuridão**. O jogo é bem mais claro que as fotos.
 
 Referências do dono do projeto em [`referencias/`](referencias/):
 
@@ -10,16 +12,41 @@ Referências do dono do projeto em [`referencias/`](referencias/):
 
 ## Princípios
 
-1. **A escuridão é o fundo.** O mundo é quase preto. Tudo que se vê é luz: neon, pichação fluorescente, efeitos.
-2. **Luz negra domina.** Ambiente banhado em roxo/azul ultravioleta. Cores fluorescentes "acendem" sobre ele.
-3. **Bagunça com hierarquia.** Muita pichação, camadas, frases, rabiscos. Mas jogadores, armas e Tinta UV ativa sempre têm o maior contraste da tela.
-4. **Futurista por cima do urbano.** Base de tijolo, concreto e metal de subsolo; por cima, tubos de LED, hologramas e interface com cara de tecnologia.
+1. **Ambiente claro o suficiente para jogar.** Nada de breu. Há sempre luz ambiente de base (céu por buracos no teto, janelas quebradas, refletores de obra, lâmpadas fluorescentes), e as superfícies em tom médio, não preto. O neon e a luz UV são **acento de cor**, não a única fonte de luz.
+2. **O jogador é a coisa mais visível da tela.** Silhueta clara, contorno de alto contraste em qualquer fundo, cor do jogador/time saturada. Nenhuma pichação, efeito ou brilho pode ter a mesma cor e intensidade de um jogador.
+3. **Bagunça com hierarquia.** Muita pichação, camadas, frases, rabiscos, entulho. Mas a ordem de destaque é fixa:
+   1. Jogadores inimigos.
+   2. Tiros, projéteis e perigos.
+   3. Tinta UV ativa e elementos de movimento (paredes de corrida, plataformas de salto, corrimãos).
+   4. Pichação e decoração (a mais apagada das quatro, por mais colorida que seja).
+4. **Superfícies de movimento se leem de longe.** Parede onde dá para correr, plataforma de salto e corrimão têm marcação visual consistente em todos os mapas (ex.: faixa de fita fluorescente na borda).
+5. **Urbano abandonado + toque futurista.** Base de tijolo, concreto, azulejo, metal enferrujado; por cima, tubos de LED, letreiros, hologramas e interface tecnológica.
+
+## Testes de visibilidade (obrigatórios nas tarefas de arte)
+
+- **Teste da captura em cinza:** a captura de tela convertida para preto e branco ainda mostra o jogador claramente destacado do cenário.
+- **Teste de distância:** um jogador parado a 40 m é identificável sem mira.
+- **Brilho médio da cena:** nenhum ponto de nascimento ou área de combate pode ficar abaixo de um brilho médio mínimo (definir número na tarefa F5-10, medido por script).
+- **Opção de acessibilidade:** controle de brilho e de intensidade do bloom nas configurações.
+
+## Ambientações (locais dos mapas)
+
+Todos abandonados e tomados por pichação, mas cada um com luz própria:
+
+| Local | Luz principal | Clima |
+|---|---|---|
+| **Estação de metrô desativada** | Lâmpadas fluorescentes falhando + luz do dia pelas grades | Azulejo, trilhos, vagões pichados |
+| **Fábrica / galpão** | Luz do dia por telhado furado + refletores | Amplo, vigas de metal, passarelas, vertical |
+| **Casa noturna abandonada (subsolo)** | Luz negra + LED + refletores de serviço acesos | O mais próximo das fotos de referência, mas com luz de serviço garantindo visibilidade |
+| **Shopping / estacionamento abandonado** | Claraboias quebradas, luz natural | Rampas, escadas rolantes paradas, muito espaço para correr |
+| **Piscina pública vazia** | Céu aberto, pôr do sol | Curvas de concreto para deslizar, pichação no fundo da piscina |
 
 ## Paleta
 
 | Papel | Cor | Hex sugerido |
 |---|---|---|
-| Fundo / sombra | Preto azulado | `#07040f` |
+| Sombra mais escura permitida | Cinza azulado | `#2a2638` |
+| Superfícies base | Concreto / tijolo em tom médio | `#6b6478` |
 | Luz ambiente UV | Roxo ultravioleta | `#5b1cff` |
 | Luz secundária | Azul elétrico | `#2a4bff` |
 | Fluorescente 1 | Rosa choque | `#ff2bd6` |
@@ -32,8 +59,10 @@ Times: **Rosa** contra **Verde**. No FFA, cada jogador recebe uma das cores fluo
 
 ## Técnica em Three.js (para os bots)
 
-- **Pós-processamento:** `EffectComposer` com `UnrealBloomPass` (bloom forte nas cores fluorescentes), leve aberração cromática e granulação.
-- **Materiais:** paredes com `MeshStandardMaterial` escuro + mapa emissivo de pichação. A pichação é que brilha, não a parede.
+- **Iluminação base:** `HemisphereLight` + uma luz direcional (sol/refletor) garantindo o piso mínimo de brilho. Luzes UV e neon vêm por cima, como cor.
+- **Pós-processamento:** `EffectComposer` com `UnrealBloomPass` **moderado** e com limiar alto (só o que é realmente neon brilha), leve aberração cromática e granulação. Nada de bloom que "lave" a tela.
+- **Contorno dos jogadores:** passe de contorno (`OutlinePass` ou contorno por shader) sempre ligado nos jogadores.
+- **Materiais:** paredes com `MeshStandardMaterial` em tom médio + mapa emissivo de pichação. A pichação brilha um pouco, a parede continua visível.
 - **Pichação procedural:** gerar texturas de grafite com Canvas 2D (tags, letras, frases, respingos, escorridos) usando sementes aleatórias, para não depender de arte pronta no começo. Frases nos degraus (referência 3) com fontes de spray.
 - **Decalques:** `DecalGeometry` para rastros de pichação dos jogadores e marcas de tiro.
 - **Tubos de LED:** cilindros finos com material emissivo + `RectAreaLight` ou luzes pontuais baratas.

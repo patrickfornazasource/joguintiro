@@ -132,15 +132,17 @@ Seguir [`ESTETICA.md`](ESTETICA.md).
 - [ ] **F5-10 Desempenho.** 60 FPS em vídeo integrado na qualidade baixa.
   Pronto quando: script de benchmark com Playwright registra FPS médio em cena cheia.
 
-**Marco F5 🧑 Teste humano #5:** capturas de tela comparadas lado a lado com as referências. "Parece aquele lugar?"
+- [ ] **F5-11 Testes de visibilidade automáticos.** Script que tira capturas em vários pontos do mapa, converte para cinza, mede brilho médio e contraste do jogador contra o fundo. Falha se algum ponto ficar abaixo do mínimo.
+
+**Marco F5 🧑 Teste humano #5:** capturas de tela comparadas com as referências. "Tem a energia daquele lugar e ainda dá para ver todo mundo?"
 
 ---
 
 ## F6: Mapas definitivos
 
 - [ ] **F6-01 Mapa Escadaria.** Poços de escada em vários níveis, corrimãos, frases nos degraus.
-- [ ] **F6-02 Mapa Pista.** Pista de dança aberta com Tinta UV no alto.
-- [ ] **F6-03 Mapa Túnel.** Corredores em loop para velocidade máxima.
+- [ ] **F6-02 Mapa Galpão.** Fábrica abandonada, telhado furado, passarelas, Tinta UV no alto.
+- [ ] **F6-03 Mapa Metrô.** Estação desativada com túneis em loop para velocidade máxima.
 - [ ] **F6-04 Pontos de nascimento e testes de fluxo.** Script que simula bots andando e gera "mapa de calor" de onde as pessoas passam.
 
 ---

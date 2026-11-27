@@ -17,13 +17,13 @@ Objetivo: agentes de IA executam o roadmap continuamente, uma tarefa por vez, e 
 | Papel | Quem | Faz o quê |
 |---|---|---|
 | Dono do projeto | Você | Joga, aprova marcos 🧑, decide o que fica e o que sai do GDD. |
-| Coordenador | Claude (sessão principal) | Mantém GDD e roadmap, quebra tarefas, revisa PRs dos bots, prepara os testes humanos. |
-| Bots executores | Sessões agendadas | Pegam uma tarefa, implementam, abrem PR. |
+| Gerente | OpenBot | Acompanha o roadmap, escolhe a próxima tarefa, faz relatórios, chama o dono nos testes humanos. |
+| Executor | Claude Code | Pega uma tarefa, implementa, testa, abre PR. Também mantém GDD e roadmap quando o dono pede mudanças. |
 
 ## Regras de segurança do processo
 
 - **Uma tarefa por PR.** PR pequeno é fácil de revisar e de desfazer.
-- **Nada vai para o `main` sem revisão.** Os PRs dos bots são revisados pelo coordenador e o dono aprova a mesclagem.
+- **Nada vai para o `main` sem revisão.** Os PRs dos executores passam pelo relatório do gerente e o dono aprova a mesclagem.
 - **Nenhum bot muda o GDD** sozinho. Se achar que uma regra de design não funciona, abre uma issue com a proposta.
 - **Testes nunca são apagados ou desligados** para fazer o CI passar.
 - **Constantes de balanceamento** só mudam em PR próprio, com justificativa.
@@ -39,4 +39,5 @@ Objetivo: agentes de IA executam o roadmap continuamente, uma tarefa por vez, e 
 
 ## Plataforma dos bots
 
-Em aberto: o dono do projeto mencionou "openbots". A definir qual ferramenta vai rodar os bots. Opção já disponível neste ambiente: **tarefas agendadas do Claude Code**, que abrem uma sessão nova neste repositório no horário marcado, seguem o ciclo acima e deixam um PR pronto.
+- **Gerente:** OpenBot, com rotinas agendadas. Instruções prontas para colar em [`OPENBOT.md`](OPENBOT.md).
+- **Executor:** Claude Code, trabalhando direto neste repositório.

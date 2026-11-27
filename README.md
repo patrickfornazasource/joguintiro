@@ -1,6 +1,6 @@
 # LUZ NEGRA (nome provisório)
 
-Movement shooter multiplayer no navegador, para 2 a 8 amigos, num subsolo pichado sob luz negra.
+Movement shooter multiplayer no navegador, para 2 a 8 amigos, em subsolos e lugares abandonados tomados por pichação neon.
 
 **Velocidade é munição. O coice é o motor. O mapa só se revela para quem corre.**
 
@@ -16,3 +16,4 @@ Fase de planejamento. Ainda não há código jogável.
 | [Estética](docs/ESTETICA.md) | Direção de arte neon, paleta e referências. |
 | [Roadmap](docs/ROADMAP.md) | Todas as tarefas, fase por fase, com critérios de pronto. |
 | [Automação](docs/AUTOMACAO.md) | Como os bots trabalham no projeto e onde você entra. |
+| [OpenBot](docs/OPENBOT.md) | Instruções prontas para o gerente no OpenBot. |

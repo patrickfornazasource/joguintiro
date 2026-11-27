@@ -111,15 +111,15 @@ Números exatos serão ajustados em teste. Ponto de partida no arquivo de consta
 
 ## 8. Mapas (proposta)
 
-Ambientação comum: casa noturna abandonada / subsolo urbano, luz negra, pichação fluorescente.
+Ambientação comum: lugares urbanos **abandonados ou subterrâneos** tomados por pichação fluorescente, **sempre bem iluminados para jogar** (ver `ESTETICA.md`).
 
-1. **Escadaria** (primeiro mapa): poços de escada interligados em vários níveis, corrimãos para deslizar, frases pichadas nos degraus (referência 3). Verticalidade forte.
-2. **Pista**: antiga pista de dança, amplo e aberto, com plataformas de Tinta UV no alto. Bom para duelos de velocidade.
-3. **Túnel**: corredores tipo metrô em loop, para velocidade máxima e o modo Pichação.
+1. **Escadaria** (primeiro mapa): subsolo de casa noturna abandonada, poços de escada interligados em vários níveis, corrimãos para deslizar, frases pichadas nos degraus (referência 3). Verticalidade forte.
+2. **Galpão**: fábrica abandonada com telhado furado, passarelas de metal e plataformas de Tinta UV no alto. Amplo, bom para duelos de velocidade.
+3. **Metrô**: estação desativada com túneis em loop e vagões pichados, para velocidade máxima e o modo Pichação.
 
 ## 9. Direção de arte
 
-Detalhada em [`ESTETICA.md`](ESTETICA.md). Resumo: escuro quase total, iluminação vinda de neon e da própria pichação, paleta roxo/azul ultravioleta com rosa, verde-limão e laranja fluorescentes, brilho forte (bloom), visual "bagunçado" com camadas de grafite sobre tudo.
+Detalhada em [`ESTETICA.md`](ESTETICA.md). Resumo: locais abandonados ou subterrâneos, **claros o suficiente para enxergar bem os jogadores**, com neon, luz UV e pichação fluorescente como acento de cor. Visual "bagunçado" com camadas de grafite, mas o jogador é sempre o elemento mais visível da tela.
 
 ## 10. Fora do escopo (por enquanto)
 
@@ -135,5 +135,5 @@ Detalhada em [`ESTETICA.md`](ESTETICA.md). Resumo: escuro quase total, iluminaç
 | Iniciantes ficam sem Carga e não conseguem jogar | Recarga mínima parada; ao renascer, começa com Carga cheia. |
 | Jogadores experientes ficam rápidos demais e intocáveis | Velocidade máxima absoluta; dano recebido também empurra (perde controle). |
 | Tinta UV confunde (plataforma some debaixo do pé) | Aviso visual de "piscar" 1 segundo antes de apagar. |
-| Visual neon cansa a vista ou esconde inimigos | Inimigos com contorno de alto contraste; opção de reduzir brilho. |
+| Visual neon cansa a vista ou esconde inimigos | Cenário claro com neon só como acento; contorno de alto contraste nos jogadores; testes automáticos de visibilidade; opção de reduzir brilho e bloom. |
 | Online com atraso deixa o jogo injusto | Fase dedicada de netcode (ver roadmap, fase 8). |
