@@ -46,11 +46,14 @@ export const MOVE = Object.freeze({
    * A física sobe de uma vez; só a imagem é suavizada. Maior = mais rápido.
    */
   STEP_SMOOTH_RATE: 15,
-  /**
-   * Velocidade de andar PROVISÓRIA (m/s), sem aceleração nem atrito.
-   * A F1-06 troca por aceleração no chão e atrito de verdade.
-   */
+  /** Velocidade de andar no chão (m/s): o alvo da aceleração. */
   WALK_SPEED: 9,
+  /** Aceleração no chão (1/s): quanto da velocidade alvo é somado por segundo (x WALK_SPEED). */
+  GROUND_ACCEL: 14,
+  /** Atrito no chão (1/s): fração da velocidade perdida por segundo. */
+  FRICTION: 7,
+  /** Abaixo desta velocidade (m/s), o atrito freia como se fosse esta: para de vez, sem "patinar". */
+  STOP_SPEED: 3,
 });
 
 /** Câmera e mouse. */

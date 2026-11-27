@@ -38,20 +38,24 @@ test('buildInput: W/S/A/D viram moveZ/moveX', () => {
   assert.equal(buildInput(keys('left'), 0, 0).moveX, -1);
 });
 
-test('andar para frente no Sandbox: 9 m/s em -z, no chão', () => {
+test('andar para frente no Sandbox: chega a 9 m/s em -z, no chão', () => {
+  // Desde a F1-06 a física acelera até a velocidade (antes era 9 m/s na hora).
   const me = createLocalPlayer({ map: sandbox }); // nasce em (0, 0, 20) olhando para -z
   walk(me, keys(), 0.1);
   const z0 = me.player.pos.z;
   walk(me, keys('forward'), 1);
-  assert.ok(Math.abs(z0 - me.player.pos.z - MOVE.WALK_SPEED) < 0.01, `andou ${z0 - me.player.pos.z} m`);
+  const walked = z0 - me.player.pos.z;
+  assert.ok(walked > 8 && walked < MOVE.WALK_SPEED, `andou ${walked} m`);
+  assert.ok(Math.abs(me.player.vel.z + MOVE.WALK_SPEED) < 1e-9, `velocidade ${me.player.vel.z}`);
+  assert.ok(Math.abs(me.player.vel.x) < 1e-9);
   assert.equal(me.player.onGround, true);
   assert.equal(me.player.pos.y, 0);
 });
 
-test('soltar as teclas para na hora (movimento provisório)', () => {
+test('soltar as teclas: para em menos de 0,35 s (atrito da F1-06)', () => {
   const me = createLocalPlayer({ map: sandbox });
   walk(me, keys('forward'), 0.5);
-  walk(me, keys(), 0.1);
+  walk(me, keys(), 0.35);
   assert.equal(Math.hypot(me.player.vel.x, me.player.vel.z), 0);
 });
 
@@ -108,7 +112,8 @@ test('olho: altura dos olhos e interpolação entre passos', () => {
   const b = me.eye(1, 0);
   assert.ok(Math.abs(b.y - (p.pos.y + PLAYER.EYE_HEIGHT)) < 1e-9);
   assert.ok(Math.abs(b.z - p.pos.z) < 1e-12);
-  assert.ok(Math.abs(a.z - (p.pos.z + MOVE.WALK_SPEED * DT)) < 1e-9, 'alpha 0 = posição do passo anterior');
+  assert.ok(p.vel.z < 0, 'começou a andar');
+  assert.ok(Math.abs(a.z - (p.pos.z - p.vel.z * DT)) < 1e-9, 'alpha 0 = posição do passo anterior');
 });
 
 test('sensibilidade: ?sens= vale e é salva; inválida cai na salva ou na padrão', () => {
