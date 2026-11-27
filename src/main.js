@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { PHYSICS, PLAYER } from '../shared/constants.js';
+import { PHYSICS, PLAYER, DEMO } from '../shared/constants.js';
+import { createLoop } from './core/loop.js';
 
 const canvas = document.getElementById('game');
 
@@ -43,12 +44,18 @@ function onResize() {
 }
 window.addEventListener('resize', onResize);
 
-function animate() {
-  renderer.render(scene, camera);
-  // Avisa o script de captura (npm run shot) que o primeiro quadro já foi desenhado.
-  if (!window.__READY) window.__READY = true;
-  requestAnimationFrame(animate);
-}
-animate();
+const loop = createLoop({
+  step: PHYSICS.FIXED_DT,
+  // Lógica em passos fixos: o cubo gira na mesma velocidade em qualquer FPS.
+  update(dt) {
+    cube.rotation.y += DEMO.CUBE_SPIN_SPEED * dt;
+  },
+  render() {
+    renderer.render(scene, camera);
+    // Avisa o script de captura (npm run shot) que o primeiro quadro já foi desenhado.
+    if (!window.__READY) window.__READY = true;
+  },
+});
+loop.start();
 
 console.info(`LUZ NEGRA: constantes carregadas (passo ${PHYSICS.FIXED_DT.toFixed(5)} s, altura ${PLAYER.HEIGHT} m)`);
