@@ -60,6 +60,13 @@ export const MOVE = Object.freeze({
   COYOTE_TIME: 0.1,
   /** Pulo antecipado (s): apertar até este tempo antes de tocar o chão também pula. */
   JUMP_BUFFER: 0.1,
+  /** Aceleração no ar (1/s, x WALK_SPEED): força do controle aéreo (air strafe). */
+  AIR_ACCEL: 12,
+  /**
+   * Teto da velocidade desejada no ar (m/s), usado só para calcular quanto falta acelerar.
+   * Pequeno de propósito: mirar de lado com A/D + mouse soma velocidade (técnica clássica).
+   */
+  AIR_WISH_CAP: 1.2,
 });
 
 /** Câmera e mouse. */

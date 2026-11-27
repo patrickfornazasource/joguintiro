@@ -49,6 +49,27 @@ export function accelerate(vel, dir, wishSpeed, accel, dt) {
 }
 
 /**
+ * Aceleração no ar (air strafe, técnica clássica dos jogos de arena).
+ * Igual a `accelerate`, mas o "quanto falta" é calculado com a velocidade desejada limitada
+ * a `wishCap`, enquanto a força usa o valor cheio. Resultado: andar só para frente no ar
+ * não acelera além do que já tem, mas mirar levemente de lado (A/D + mouse) soma velocidade.
+ * Não altera `vel`: devolve uma velocidade nova.
+ * @param {{x,y,z}} vel (m/s)
+ * @param {{x,y,z}} dir direção desejada, comprimento 1
+ * @param {number} wishSpeed velocidade desejada cheia (m/s)
+ * @param {number} accel aceleração no ar (1/s, multiplicada por wishSpeed)
+ * @param {number} wishCap teto para o cálculo do "quanto falta" (m/s)
+ * @param {number} dt (s)
+ */
+export function airAccelerate(vel, dir, wishSpeed, accel, wishCap, dt) {
+  const current = vel.x * dir.x + vel.y * dir.y + vel.z * dir.z;
+  const missing = Math.min(wishSpeed, wishCap) - current;
+  if (missing <= 0) return { ...vel };
+  const add = Math.min(accel * wishSpeed * dt, missing);
+  return { x: vel.x + dir.x * add, y: vel.y + dir.y * add, z: vel.z + dir.z * add };
+}
+
+/**
  * Atrito no plano (x, z): tira friction x velocidade por segundo; abaixo de stopSpeed,
  * freia como se estivesse a stopSpeed (para de vez). Nunca inverte o sentido.
  * Não altera `vel`: devolve uma velocidade nova (y fica igual).
