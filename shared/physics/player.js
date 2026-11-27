@@ -14,6 +14,7 @@
 //   crouchPressed boolean, agachar/deslizar apertado neste passo
 //   dashPressed   boolean, dash apertado neste passo
 import { MOVE, PLAYER } from '../constants.js';
+import { moveAndCollide } from './collide.js';
 
 /** Entrada vazia (nada apertado), útil como padrão e em testes. */
 export function emptyInput() {
@@ -43,8 +44,12 @@ export function createPlayer(spawn) {
     /** Para onde olha (rad). */
     yaw: spawn.yaw ?? 0,
     pitch: 0,
-    /** Está apoiado no chão? (calculado pela colisão, F1-03) */
+    /** Está apoiado no chão? (calculado pela colisão a cada passo) */
     onGround: false,
+    /** Tipo do bloco em que está pisando ('solid', 'pad'...), ou null no ar. */
+    groundType: null,
+    /** Último contato lateral neste passo: { normal: {x,y,z}, type }, ou null (usado na F1-11). */
+    contact: null,
     /** Está agachado ou deslizando? (F1-10) */
     crouching: false,
     /** Altura atual do corpo (m): PLAYER.HEIGHT em pé, PLAYER.CROUCH_HEIGHT agachado. */
@@ -64,22 +69,20 @@ export function createPlayer(spawn) {
 
 /**
  * Avança o jogador um passo fixo de simulação.
- * Por enquanto: só gravidade (com limite de queda) e movimento pela velocidade.
- * Colisão com o mapa vem na F1-03; a entrada ainda não é usada.
+ * Por enquanto: gravidade (com limite de queda) e movimento pela velocidade, parando
+ * nas caixas do mapa. A entrada ainda não é usada.
  * @param {ReturnType<typeof createPlayer>} p estado do jogador (alterado no lugar)
  * @param {ReturnType<typeof emptyInput>} input entrada deste passo
- * @param {object} map mapa (shared/maps), usado a partir da F1-03
+ * @param {{ boxes: Array }} map mapa (shared/maps)
  * @param {number} dt duração do passo (s), normalmente PHYSICS.FIXED_DT
  * @returns o mesmo objeto p
  */
 export function stepPlayer(p, input, map, dt) {
-  // Gravidade, sem passar da velocidade máxima de queda.
-  if (!p.onGround) {
-    p.vel.y = Math.max(p.vel.y - MOVE.GRAVITY * dt, -MOVE.MAX_FALL_SPEED);
-  }
-  // Integração semi-implícita: primeiro a velocidade, depois a posição (mais estável).
-  p.pos.x += p.vel.x * dt;
-  p.pos.y += p.vel.y * dt;
-  p.pos.z += p.vel.z * dt;
+  // Gravidade sempre puxa, sem passar da velocidade máxima de queda. No chão, a colisão
+  // zera a queda a cada passo; assim onGround fica estável (não pisca entre passos).
+  p.vel.y = Math.max(p.vel.y - MOVE.GRAVITY * dt, -MOVE.MAX_FALL_SPEED);
+  // Integração semi-implícita: primeiro a velocidade, depois a posição (mais estável),
+  // parando nas caixas do mapa (F1-03).
+  moveAndCollide(p, map, dt);
   return p;
 }

@@ -27,6 +27,7 @@ Objetivo: agentes de IA executam o roadmap continuamente, uma tarefa por vez, e 
 - **Nenhum bot muda o GDD** sozinho. Se achar que uma regra de design não funciona, abre uma issue com a proposta.
 - **Testes nunca são apagados ou desligados** para fazer o CI passar.
 - **Constantes de balanceamento** só mudam em PR próprio, com justificativa.
+- **Nomes de constantes:** nomes em camelCase das fichas viram MAIÚSCULAS_COM_SUBLINHADO em `shared/constants.js` (ex.: `groundAccel` vira `GROUND_ACCEL`). Decisão da gerência, vale da F1 em diante.
 - **Custo:** cada execução de bot consome uso da sua assinatura. Começar com poucas execuções por dia e aumentar se o ritmo de revisão acompanhar. Bot rodando sem parar produz PRs mais rápido do que alguém consegue testar.
 
 ## Ritmo sugerido
