@@ -6,6 +6,7 @@ Plano completo do projeto, do repositório vazio ao jogo no ar para os amigos.
 
 - O projeto tem **11 fases** (F0 a F10). Cada fase termina num **marco**.
 - Cada fase tem **tarefas** com código (ex.: `F1-03`). Cada tarefa cabe numa sessão de trabalho de um bot.
+- Tarefas das fases atual e seguinte têm **ficha detalhada** em [`tarefas/`](tarefas/README.md). As demais são detalhadas quando a fase anterior termina.
 - **Depende de:** tarefas que precisam estar prontas antes.
 - **Pronto quando:** critério objetivo de aceite. Sem isso cumprido, a tarefa não está pronta.
 - 🧑 **Teste humano:** marcos que só o dono do projeto pode aprovar, porque "é divertido?" não se verifica por script. **Nenhum bot avança para a fase seguinte sem esse aval.**
@@ -17,49 +18,51 @@ Status possíveis: `[ ]` a fazer, `[~]` em andamento, `[x]` pronto.
 ## F0: Fundação
 
 Objetivo: projeto que roda no navegador com um comando, com testes automáticos que os bots usam para se verificar.
+**Fichas detalhadas:** [`tarefas/`](tarefas/README.md) (dependências, ordem e paralelismo).
 
-- [ ] **F0-01 Estrutura do projeto.** Vite + Three.js no cliente, Node.js + `ws` no servidor, pasta `shared/` com código usado pelos dois. Scripts `npm run dev`, `npm run build`, `npm start`.
-  Pronto quando: `npm install && npm run dev` abre uma cena 3D vazia no navegador e o servidor responde na porta 8787.
-- [ ] **F0-02 Constantes de jogo centralizadas.** Arquivo `shared/constants.js` com todos os números de movimento, Carga e armas.
-  Depende de: F0-01. Pronto quando: nenhum número de balanceamento aparece "solto" fora desse arquivo.
-- [ ] **F0-03 Teste visual automático.** Script com Playwright que abre o jogo, espera carregar e salva captura de tela em `artifacts/`.
-  Depende de: F0-01. Pronto quando: `npm run shot` gera a imagem sem erro no console.
-- [ ] **F0-04 Testes de lógica.** Configurar `node --test` para testar física e regras sem navegador.
-  Depende de: F0-01. Pronto quando: `npm test` roda e passa com pelo menos um teste.
-- [ ] **F0-05 CI no GitHub.** Workflow que roda `npm test` e `npm run build` em todo PR.
-  Depende de: F0-04. Pronto quando: PR mostra o check verde.
-- [ ] **F0-06 Página de depuração.** Tecla F3 mostra FPS, posição, velocidade, Carga, estado de rede.
-  Depende de: F0-01.
+- [ ] **[F0-01](tarefas/F0-01.md)** Estrutura do projeto e cena 3D vazia
+- [ ] **[F0-02](tarefas/F0-02.md)** Servidor mínimo com WebSocket
+- [ ] **[F0-03](tarefas/F0-03.md)** Comando único para rodar tudo
+- [ ] **[F0-04](tarefas/F0-04.md)** Pasta shared e constantes centralizadas
+- [ ] **[F0-05](tarefas/F0-05.md)** Testes automáticos de lógica
+- [ ] **[F0-06](tarefas/F0-06.md)** Captura de tela automática
+- [ ] **[F0-07](tarefas/F0-07.md)** Verificação automática no GitHub (CI)
+- [ ] **[F0-08](tarefas/F0-08.md)** Laço do jogo com passo fixo
+- [ ] **[F0-09](tarefas/F0-09.md)** Leitura de teclado e mouse
+- [ ] **[F0-10](tarefas/F0-10.md)** Painel de depuração (F3)
+- [ ] **[F0-11](tarefas/F0-11.md)** Versão de teste por link
 
-**Marco F0:** tela 3D abre, testes rodam, CI ativo.
+**Marco F0:** tela 3D abre, testes rodam, CI ativo, link de teste no ar.
 
 ---
 
 ## F1: Movimento (o coração)
 
-Objetivo: correr, pular e deslizar precisa ser gostoso **antes** de existir tiro.
+Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes** de existir tiro.
 
-- [ ] **F1-01 Física do jogador em `shared/physics.js`.** Código puro (sem Three.js) para rodar igual no cliente e no servidor. Passo fixo de 1/120 s.
-- [ ] **F1-02 Colisão com caixas.** Jogador como caixa (AABB) contra o cenário, resolvendo eixo a eixo. Subir degraus de até 0,45 m sem pular.
-  Pronto quando: teste prova que o jogador não atravessa paredes a 40 m/s e sobe escadas andando.
-- [ ] **F1-03 Câmera em primeira pessoa.** Pointer lock, sensibilidade ajustável e salva no navegador.
-- [ ] **F1-04 Aceleração no chão e atrito.**
-- [ ] **F1-05 Air strafe.** Controle aéreo que permite ganhar velocidade virando o mouse com A/D.
-  Pronto quando: teste automático mostra ganho de velocidade em 10 pulos seguidos com strafe ideal.
-- [ ] **F1-06 Bunny hop.** Segurar espaço pula ao tocar o chão sem perder velocidade por atrito.
-- [ ] **F1-07 Deslize.** Ctrl/C; impulso inicial; pulo durante deslize mantém velocidade (slide hop); câmera abaixa.
-- [ ] **F1-08 Corrida na parede (estilo Titanfall 2).** Detecção de parede lateral, gravidade reduzida, duração máxima, ganho leve de velocidade, câmera inclina para o lado oposto à parede.
-  Pronto quando: teste automático percorre um corredor de paredes alternadas (parede → pulo → parede) sem tocar o chão.
-- [ ] **F1-09 Pulo na parede (estilo Ultrakill).** Janela de tolerância de 0,15 s; máximo de 3 seguidos; recarga ao tocar o chão.
-- [ ] **F1-09a Pulo duplo.** Um pulo extra no ar; recarrega no chão ou na parede.
-- [ ] **F1-09d Dash de coice (versão provisória).** Shift arremessa na direção das teclas. Nesta fase usa 3 cargas com recarga por tempo; em **F2-12** passa a ser um disparo de arma que gasta Carga.
-- [ ] **F1-09b Golpe no chão e pulo de slam.** Queda rápida; pulo de slam proporcional à altura da queda.
-- [ ] **F1-09c Plataformas de salto.**
-- [ ] **F1-10 Corrimão deslizável.** Encostar num corrimão em deslize "trava" nele e acelera na descida.
-- [ ] **F1-11 Sensação de velocidade.** FOV dinâmico, inclinação de câmera, velocímetro no HUD.
-- [ ] **F1-12 Mapa cinza de testes.** Arena simples com escadas, paredes finas, plataformas e corrimãos (sem arte).
+- [ ] **[F1-01](tarefas/F1-01.md)** Formato de mapa e mapa cinza inicial
+- [ ] **[F1-02](tarefas/F1-02.md)** Estado do jogador e gravidade
+- [ ] **[F1-03](tarefas/F1-03.md)** Colisão com o cenário
+- [ ] **[F1-04](tarefas/F1-04.md)** Subir degraus andando
+- [ ] **[F1-05](tarefas/F1-05.md)** Câmera em primeira pessoa e andar pelo mapa
+- [ ] **[F1-06](tarefas/F1-06.md)** Aceleração no chão e atrito
+- [ ] **[F1-07](tarefas/F1-07.md)** Pulo, bunny hop e tolerância de borda
+- [ ] **[F1-08](tarefas/F1-08.md)** Controle aéreo (air strafe)
+- [ ] **[F1-09](tarefas/F1-09.md)** Pulo duplo
+- [ ] **[F1-10](tarefas/F1-10.md)** Deslize e slide hop
+- [ ] **[F1-11](tarefas/F1-11.md)** Detector de parede
+- [ ] **[F1-12](tarefas/F1-12.md)** Corrida na parede
+- [ ] **[F1-13](tarefas/F1-13.md)** Pulo na parede
+- [ ] **[F1-14](tarefas/F1-14.md)** Golpe no chão (slam) e pulo de slam
+- [ ] **[F1-15](tarefas/F1-15.md)** Dash provisório
+- [ ] **[F1-16](tarefas/F1-16.md)** Plataformas de salto
+- [ ] **[F1-17](tarefas/F1-17.md)** Corrimão deslizável
+- [ ] **[F1-18](tarefas/F1-18.md)** Sensação de velocidade e velocímetro
+- [ ] **[F1-19](tarefas/F1-19.md)** Mapa de treino com estações
+- [ ] **[F1-20](tarefas/F1-20.md)** Painel de ajuste ao vivo (F4)
+- [ ] **[F1-21](tarefas/F1-21.md)** Roteiro do Teste humano #1
 
-**Marco F1 🧑 Teste humano #1:** o dono do projeto corre pelo mapa cinza por 10 minutos e responde: "o movimento é gostoso?". Ajustes de constantes até a resposta ser sim.
+**Marco F1 🧑 Teste humano #1:** o dono do projeto segue o roteiro de `docs/testes/teste-humano-01.md` no mapa de treino, ajusta os números no painel F4 e responde: "o movimento é gostoso?". Ajustes até a resposta ser sim. **Status: aguardando.**
 
 ---
 

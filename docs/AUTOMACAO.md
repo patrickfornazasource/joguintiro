@@ -5,7 +5,7 @@ Objetivo: agentes de IA executam o roadmap continuamente, uma tarefa por vez, e 
 ## O ciclo de cada bot
 
 1. **Ler** `CLAUDE.md`, `docs/GDD.md` e `docs/ROADMAP.md`.
-2. **Escolher** a primeira tarefa `[ ]` do roadmap cujas dependências estão `[x]`, **na fase atual**. Nunca pular para uma fase cujo marco com 🧑 ainda não foi aprovado.
+2. **Escolher** a primeira tarefa `[ ]` do roadmap cujas dependências estão `[x]`, **na fase atual**, e ler a ficha dela em `docs/tarefas/<código>.md`. Nunca pular para uma fase cujo marco com 🧑 ainda não foi aprovado. Sem ficha, não executa: pede ao coordenador para detalhar.
 3. **Marcar** a tarefa como `[~]` com o nome do branch.
 4. **Implementar** num branch próprio (`bot/F1-05-air-strafe`).
 5. **Verificar:** `npm test`, `npm run build` e, se mexeu no visual, `npm run shot` (captura de tela anexada ao PR).

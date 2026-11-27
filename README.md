@@ -17,3 +17,4 @@ Fase de planejamento. Ainda não há código jogável.
 | [Roadmap](docs/ROADMAP.md) | Todas as tarefas, fase por fase, com critérios de pronto. |
 | [Automação](docs/AUTOMACAO.md) | Como os bots trabalham no projeto e onde você entra. |
 | [OpenBot](docs/OPENBOT.md) | Instruções prontas para o gerente no OpenBot. |
+| [Fichas de tarefa](docs/tarefas/README.md) | Uma ficha detalhada por tarefa, para cada bot executar. |

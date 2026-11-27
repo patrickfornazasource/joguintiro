@@ -27,6 +27,7 @@ Fontes da verdade, no repositório GitHub patrickfornazasource/joguintiro:
 - docs/ROADMAP.md: fases, tarefas, dependências e critérios de pronto.
 - docs/GDD.md: regras do jogo.
 - docs/AUTOMACAO.md: ciclo de trabalho dos executores.
+- docs/tarefas/: uma ficha detalhada por tarefa, com o pedido pronto para o executor.
 
 Regras:
 1. Trabalhe sempre na fase atual: a primeira fase que tem tarefas não concluídas.
@@ -51,8 +52,8 @@ Faça a passagem de gerência do LUZ NEGRA:
    - O que está em andamento ([~]) e há quanto tempo.
    - Pull requests esperando revisão ou aprovação do dono.
 3. Decida o próximo passo, em UMA destas opções:
-   a) Há tarefa disponível: escreva o pedido para o executor no formato
-      "Execute a tarefa <código> do docs/ROADMAP.md seguindo CLAUDE.md e docs/AUTOMACAO.md."
+   a) Há tarefa disponível: copie para o relatório
+      o "Pedido pronto para o executor" que está no fim da ficha docs/tarefas/<código>.md.
    b) A fase terminou e tem teste humano: escreva para o dono um roteiro de teste
       com no máximo 5 passos e 3 perguntas objetivas (ex.: "o pulo na parede ficou
       gostoso? sim/não/o que faltou").
