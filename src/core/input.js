@@ -136,7 +136,8 @@ export function attachInput({ canvas, target = window, doc = document, bindings 
     if (!isLocked()) {
       // O primeiro clique só trava o ponteiro, não conta como tiro.
       e.preventDefault();
-      canvas.requestPointerLock?.();
+      // O Chrome recusa a trava logo após o Esc (e rejeita a promessa): ignorar sem erro.
+      canvas.requestPointerLock?.()?.catch?.(() => {});
       return;
     }
     state.press(`Mouse${e.button}`);
