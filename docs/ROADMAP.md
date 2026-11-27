@@ -20,7 +20,7 @@ Status possíveis: `[ ]` a fazer, `[~]` em andamento, `[x]` pronto.
 Objetivo: projeto que roda no navegador com um comando, com testes automáticos que os bots usam para se verificar.
 **Fichas detalhadas:** [`tarefas/`](tarefas/README.md) (dependências, ordem e paralelismo).
 
-- [ ] **[F0-01](tarefas/F0-01.md)** Estrutura do projeto e cena 3D vazia
+- [x] **[F0-01](tarefas/F0-01.md)** Estrutura do projeto e cena 3D vazia
 - [ ] **[F0-02](tarefas/F0-02.md)** Servidor mínimo com WebSocket
 - [ ] **[F0-03](tarefas/F0-03.md)** Comando único para rodar tudo
 - [ ] **[F0-04](tarefas/F0-04.md)** Pasta shared e constantes centralizadas
