@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
+import { NET } from '../shared/constants.js';
 
 const PORT = Number(process.env.PORT) || 8787;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -110,5 +111,5 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Servidor LUZ NEGRA em http://localhost:${PORT}`);
+  console.log(`Servidor LUZ NEGRA em http://localhost:${PORT} (rede a ${NET.TICK_RATE} Hz)`);
 });
