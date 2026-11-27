@@ -30,9 +30,9 @@ Objetivo: projeto que roda no navegador com um comando, com testes automáticos 
 - [ ] **[F0-08](tarefas/F0-08.md)** Laço do jogo com passo fixo
 - [ ] **[F0-09](tarefas/F0-09.md)** Leitura de teclado e mouse
 - [ ] **[F0-10](tarefas/F0-10.md)** Painel de depuração (F3)
-- [ ] **[F0-11](tarefas/F0-11.md)** Versão de teste por link
+- [ ] **[F0-11](tarefas/F0-11.md)** Versão de teste por link *(adiada: testes locais por enquanto)*
 
-**Marco F0:** tela 3D abre, testes rodam, CI ativo, link de teste no ar.
+**Marco F0:** tela 3D abre, testes rodam, CI ativo, jogo roda localmente com `npm run dev`.
 
 ---
 

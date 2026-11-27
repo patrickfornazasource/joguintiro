@@ -37,6 +37,12 @@ Objetivo: agentes de IA executam o roadmap continuamente, uma tarefa por vez, e 
 | F3 a F6 | 4 a 6 execuções por dia | Muitas tarefas independentes (arte, mapas, rede). |
 | F7 em diante | Conforme necessidade | Polimento depende de feedback de partidas reais. |
 
+## Decisões do dono
+
+| Data | Decisão |
+|---|---|
+| 27/11/2026 | Testes locais por enquanto (`npm run dev`). Hospedagem online (F0-11) adiada. |
+
 ## Plataforma dos bots
 
 - **Gerente:** OpenBot, com rotinas agendadas. Instruções prontas para colar em [`OPENBOT.md`](OPENBOT.md).

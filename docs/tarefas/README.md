@@ -56,7 +56,7 @@ Tarefas sem dependência entre si podem ser feitas por bots diferentes ao mesmo 
 | 2 | F0-02, F0-04, F0-06 |
 | 3 | F0-03, F0-05 |
 | 4 | F0-07, F0-08, F1-02 |
-| 5 | F0-09, F0-11, F1-01 |
+| 5 | F0-09, F1-01 (F0-11 adiada: testes locais por enquanto) |
 | 6 | F0-10, F1-03 |
 | 7 | F1-04, F1-11 |
 | 8 | F1-05 |
