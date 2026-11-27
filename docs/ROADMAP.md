@@ -44,7 +44,7 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 - [x] **[F1-02](tarefas/F1-02.md)** Estado do jogador e gravidade
 - [x] **[F1-03](tarefas/F1-03.md)** Colisão com o cenário
 - [x] **[F1-04](tarefas/F1-04.md)** Subir degraus andando
-- [ ] **[F1-05](tarefas/F1-05.md)** Câmera em primeira pessoa e andar pelo mapa
+- [x] **[F1-05](tarefas/F1-05.md)** Câmera em primeira pessoa e andar pelo mapa
 - [ ] **[F1-06](tarefas/F1-06.md)** Aceleração no chão e atrito
 - [ ] **[F1-07](tarefas/F1-07.md)** Pulo, bunny hop e tolerância de borda
 - [ ] **[F1-08](tarefas/F1-08.md)** Controle aéreo (air strafe)

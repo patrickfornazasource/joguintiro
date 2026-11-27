@@ -1,11 +1,13 @@
 import * as THREE from 'three';
-import { PHYSICS, PLAYER, DEMO } from '../shared/constants.js';
+import { PHYSICS, PLAYER, DEMO, VIEW } from '../shared/constants.js';
 import { createLoop } from './core/loop.js';
 import { attachInput, ACTIONS } from './core/input.js';
 import { createDebugPanel } from './ui/debug.js';
 import { getMap } from '../shared/maps/index.js';
 import { validateMap } from '../shared/maps/format.js';
 import { createMapMeshes } from './world/mapRenderer.js';
+import { createLocalPlayer, resolveSensitivity } from './player/localPlayer.js';
+import { createStartScreen } from './ui/startScreen.js';
 
 const canvas = document.getElementById('game');
 
@@ -25,17 +27,16 @@ if (!check.ok) throw new Error(`Mapa "${map.id}" inválido: ${check.errors.join(
 scene.add(createMapMeshes(map));
 console.info(`LUZ NEGRA: mapa "${map.name}" (${map.boxes.length} caixas)`);
 
-// Câmera de visão geral do mapa (até existir o jogador, na F1-05).
-const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 500);
-camera.position.set(0, 30, 24);
-camera.lookAt(0, 0, -4);
+// Câmera em primeira pessoa (posição e direção vêm do jogador local a cada quadro).
+const camera = new THREE.PerspectiveCamera(VIEW.FOV, window.innerWidth / window.innerHeight, 0.05, 500);
+camera.rotation.order = 'YXZ'; // gira primeiro para os lados (yaw), depois para cima/baixo (pitch)
 
-// Um cubo
+// Cubo girando no alto do centro do mapa: sinal visual de que o jogo está rodando.
 const cube = new THREE.Mesh(
   new THREE.BoxGeometry(1, 1, 1),
   new THREE.MeshStandardMaterial({ color: 0xcccccc }),
 );
-cube.position.set(0, 0.5, 0);
+cube.position.set(0, 3, 0);
 scene.add(cube);
 
 // Luzes
@@ -58,7 +59,21 @@ if (import.meta.env.DEV) window.__input = input;
 
 // Painel de depuração: F3 liga e desliga; ?debug=1 no endereço já abre ligado.
 const debug = createDebugPanel();
-debug.set('jogador', 'ainda não existe (Fase 1)');
+
+// Sensibilidade do mouse: ?sens=0.003 no endereço muda e fica salva.
+let storage = null;
+try {
+  storage = window.localStorage;
+} catch {
+  storage = null;
+}
+const sensitivity = resolveSensitivity(window.location.search, storage);
+
+// Jogador local no primeiro ponto de nascimento do mapa.
+const me = createLocalPlayer({ map, sensitivity });
+createStartScreen({ canvas });
+const deg = (rad) => Math.round((rad * 180) / Math.PI);
+let lastFrame = performance.now();
 
 // Nomes das ações em português, só para exibir no painel.
 const ACTION_LABELS = {
@@ -80,15 +95,33 @@ const keyText = (k) => (k ? `${k.code || '(sem código)'} / ${k.key === ' ' ? 'E
 
 const loop = createLoop({
   step: PHYSICS.FIXED_DT,
-  // Lógica em passos fixos: o cubo gira na mesma velocidade em qualquer FPS.
+  // Lógica em passos fixos: mesma física em qualquer FPS.
   update(dt) {
     cube.rotation.y += DEMO.CUBE_SPIN_SPEED * dt;
+    me.step(input, dt);
     // Fim do passo: os apertos (pressed) deste passo já foram vistos.
     input.endStep();
     debug.step();
   },
-  render() {
+  render(alpha) {
+    const now = performance.now();
+    const frameDt = (now - lastFrame) / 1000;
+    lastFrame = now;
+    // Mouse a cada quadro (resposta imediata); posição interpolada entre passos.
+    const mouse = input.consumeMouseDelta();
+    me.look(mouse.x, mouse.y);
+    const eye = me.eye(alpha, frameDt);
+    camera.position.set(eye.x, eye.y, eye.z);
+    camera.rotation.set(me.pitch, me.yaw, 0);
     renderer.render(scene, camera);
+    const p = me.player;
+    debug.set('posição', p.pos);
+    debug.set('velocidade (m/s)', Math.hypot(p.vel.x, p.vel.z));
+    debug.set('queda (m/s)', p.vel.y);
+    debug.set('no chão', p.onGround ? 'sim' : 'não');
+    debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
+    debug.set('sensibilidade', me.sensitivity.toFixed(4));
+    debug.set('renasceu', me.respawns);
     debug.set('chamadas de desenho', renderer.info.render.calls);
     debug.set('triângulos', renderer.info.render.triangles);
     debug.set('teclas', ACTIONS.filter((a) => input.isDown(a)).map((a) => ACTION_LABELS[a] ?? a));

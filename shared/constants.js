@@ -29,6 +29,8 @@ export const PLAYER = Object.freeze({
   CROUCH_EYE_HEIGHT: 0.95,
   /** Vida máxima (pontos de vida). */
   MAX_HEALTH: 100,
+  /** Quem cair mais que isto abaixo do chão (y = 0) renasce no ponto de nascimento (m). */
+  RESPAWN_FALL_DEPTH: 30,
 });
 
 /** Movimento: valores preenchidos ao longo das tarefas da Fase 1. */
@@ -44,6 +46,21 @@ export const MOVE = Object.freeze({
    * A física sobe de uma vez; só a imagem é suavizada. Maior = mais rápido.
    */
   STEP_SMOOTH_RATE: 15,
+  /**
+   * Velocidade de andar PROVISÓRIA (m/s), sem aceleração nem atrito.
+   * A F1-06 troca por aceleração no chão e atrito de verdade.
+   */
+  WALK_SPEED: 9,
+});
+
+/** Câmera e mouse. */
+export const VIEW = Object.freeze({
+  /** Sensibilidade padrão do mouse (rad por pixel). Ajustável por ?sens= no endereço. */
+  MOUSE_SENSITIVITY: 0.0022,
+  /** Limite para olhar para cima ou para baixo (rad). 89° evita virar de cabeça para baixo. */
+  MAX_PITCH: (89 * Math.PI) / 180,
+  /** Campo de visão vertical da câmera (graus). */
+  FOV: 90,
 });
 
 /** Rede. */
