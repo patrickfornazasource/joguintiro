@@ -145,6 +145,8 @@ export const MOVE = Object.freeze({
   DASH_RECHARGE: 1.2,
   /** Fração da velocidade do dash mantida ao fim (0 a 1), se for maior que a de antes. */
   DASH_END_SPEED_KEEP: 0.7,
+  /** Plataforma de salto sem direção: velocidade para cima ao pousar (m/s). Cerca de 6 m de altura. */
+  PAD_SPEED: 17,
 });
 
 /** Câmera e mouse. */

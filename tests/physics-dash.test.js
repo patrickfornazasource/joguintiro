@@ -163,3 +163,15 @@ test('durante o slam, encostado numa parede, Espaço não faz pulo na parede', (
   assert.equal(p.state, 'slam');
   assert.equal(p.vel.y, -MOVE.SLAM_SPEED);
 });
+
+// Pedido da revisão da F1-15: travar a regra "sem pulo do chão durante o dash".
+test('durante o dash no chão, Espaço não pula', () => {
+  const p = createPlayer({ x: 0, y: 0, z: 0 });
+  stepPlayer(p, emptyInput(), floorMap, DT);
+  stepPlayer(p, input({ dashPressed: true }), floorMap, DT);
+  assert.equal(p.state, 'dash');
+  stepPlayer(p, input({ jump: true, jumpPressed: true }), floorMap, DT);
+  assert.equal(has(p, 'jump'), false, 'sem pulo durante o dash');
+  assert.equal(p.state, 'dash');
+  assert.equal(p.vel.y, 0);
+});

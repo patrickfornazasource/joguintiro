@@ -15,6 +15,7 @@
 //   dashPressed   boolean, dash apertado neste passo
 import { MOVE, PLAYER } from '../constants.js';
 import { moveAndCollide, fitsWithHeight } from './collide.js';
+import { BOX_TYPES } from '../maps/format.js';
 import { updateWall } from './walls.js';
 import { updateWallrun, endWallrun } from './wallrun.js';
 import { startDash, stepDash, rechargeDash } from './dash.js';
@@ -52,6 +53,8 @@ export function createPlayer(spawn) {
     onGround: false,
     /** Tipo do bloco em que está pisando ('solid', 'pad'...), ou null no ar. */
     groundType: null,
+    /** Bloco em que está pisando (para dados do bloco, ex.: direção de uma plataforma de salto), ou null. */
+    groundBox: null,
     /** Último contato lateral neste passo: { normal: {x,y,z}, type }, ou null (usado na F1-11). */
     contact: null,
     /** Tempo que ainda resta de tolerância de borda (s): COYOTE_TIME ao sair do chão, contando para baixo. */
@@ -251,8 +254,27 @@ export function stepPlayer(p, input, map, dt) {
     p.slamJumpWindow = MOVE.SLAM_JUMP_WINDOW;
     p.events.push({ type: 'slamLand', height });
   }
+  if (p.onGround && p.groundType === BOX_TYPES.PAD) launchFromPad(p, p.groundBox);
   p.state = dashing ? 'dash' : p.slam ? 'slam' : p.wallrun ? 'wallrun' : p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
   return p;
+}
+
+/**
+ * Plataforma de salto (F1-16): ao pousar, lança. Com o campo `launch` do bloco ({x,y,z}, m/s),
+ * a velocidade vira exatamente essa; sem ele, sobe a MOVE.PAD_SPEED mantendo a horizontal.
+ * Conta como tocar o chão: recarrega pulo duplo e pulos na parede.
+ */
+function launchFromPad(p, pad) {
+  if (pad && pad.launch) p.vel = { x: pad.launch.x, y: pad.launch.y, z: pad.launch.z };
+  else p.vel.y = MOVE.PAD_SPEED;
+  p.onGround = false;
+  p.coyote = 0;
+  p.dash = null; // o lançamento vence um dash em andamento
+  endSlide(p); // termina um deslize em andamento
+  p.jumpsLeft = MOVE.AIR_JUMPS;
+  p.wallJumpsLeft = MOVE.WALL_JUMP_MAX;
+  p.wallsUsed = [];
+  p.events.push({ type: 'pad', launch: { ...p.vel } });
 }
 
 /** Termina o deslize (mantém agachado; quem decide levantar é updateCrouch). */
