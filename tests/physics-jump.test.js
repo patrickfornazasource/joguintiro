@@ -89,7 +89,10 @@ test('tolerância de borda vale para um pulo só', () => {
   stepPlayer(p, input({ jump: true, jumpPressed: true }), map, DT);
   assert.equal(p.events.length, 1);
   stepPlayer(p, input({ jump: true, jumpPressed: true }), map, DT);
-  assert.deepEqual(p.events, [], 'segundo aperto no ar não pula (pulo duplo é a F1-09)');
+  // Desde a F1-09 o segundo aperto no ar é o pulo duplo, não um segundo pulo normal.
+  assert.deepEqual(p.events, [{ type: 'doubleJump' }], 'segundo aperto: pulo duplo, não outro pulo normal');
+  stepPlayer(p, input({ jump: true, jumpPressed: true }), map, DT);
+  assert.deepEqual(p.events, [], 'terceiro aperto no ar não pula');
 });
 
 /** Cai de 2 m; aperta espaço `before` segundos antes de tocar o chão e solta. Pulou ao pousar? */

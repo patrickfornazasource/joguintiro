@@ -67,6 +67,15 @@ export const MOVE = Object.freeze({
    * Pequeno de propósito: mirar de lado com A/D + mouse soma velocidade (técnica clássica).
    */
   AIR_WISH_CAP: 1.2,
+  /** Pulos extras no ar (pulo duplo). Recarregam ao tocar o chão (e, na F1-12, ao correr numa parede). */
+  AIR_JUMPS: 1,
+  /** Velocidade para cima no pulo duplo (m/s). Substitui a vertical do momento (cancela a queda). */
+  DOUBLE_JUMP_SPEED: 7.5,
+  /**
+   * Quanto o pulo duplo vira a direção horizontal para as teclas apertadas (0 a 1).
+   * 0 = não vira; 1 = vira totalmente. A velocidade (o módulo) não muda.
+   */
+  DOUBLE_JUMP_REDIRECT: 0.6,
 });
 
 /** Câmera e mouse. */
