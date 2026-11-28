@@ -74,6 +74,11 @@ export function createPlayer(spawn) {
      * Correr numa parede desta lista não recarrega nada (GDD: recarga só em "parede nova").
      */
     wallsUsed: [],
+    /** Golpe no chão em andamento: { startY } (altura em que começou), ou null (F1-14). */
+    slam: null,
+    /** Tempo que resta da janela do pulo de slam (s), e a altura da queda que o alimenta (m). */
+    slamJumpWindow: 0,
+    slamHeight: 0,
     /** Altura atual do corpo (m): PLAYER.HEIGHT em pé, PLAYER.CROUCH_HEIGHT agachado. */
     height: PLAYER.HEIGHT,
 
@@ -124,7 +129,14 @@ export function stepPlayer(p, input, map, dt) {
 
   const canJump = p.onGround || p.coyote > 0;
   const wantsJump = p.jumpBuffer > 0 || (input.jump && p.onGround);
-  const jumping = !onWall && canJump && wantsJump;
+  const jumping = !onWall && !p.slam && canJump && wantsJump;
+
+  // Golpe no chão (F1-14): agachar no ar (fora da corrida na parede) despenca em linha reta.
+  p.slamJumpWindow = Math.max(0, p.slamJumpWindow - dt);
+  if (!onWall && !jumping && !p.onGround && !p.slam && input.crouchPressed) {
+    p.slam = { startY: p.pos.y };
+    p.events.push({ type: 'slamStart' });
+  }
 
   // Pulo na parede (F1-13): no ar, fora da corrida, encostado (ou na memória de 0,15 s) numa
   // parede, com um aperto novo. Tem prioridade sobre o pulo duplo. Máximo WALL_JUMP_MAX seguidos.
@@ -132,12 +144,12 @@ export function stepPlayer(p, input, map, dt) {
   if (p.lastWallJump) p.lastWallJump.age += dt;
   const sameWallTooSoon = p.wall && p.lastWallJump && p.lastWallJump.box === p.wall.box
     && p.lastWallJump.age < MOVE.WALL_JUMP_SAME_WALL_DELAY;
-  const wallJumping = !onWall && !jumping && !p.onGround && input.jumpPressed
+  const wallJumping = !onWall && !p.slam && !jumping && !p.onGround && input.jumpPressed
     && p.wall !== null && !sameWallTooSoon && p.wallJumpsLeft > 0;
 
   // Pulo duplo (F1-09): recarrega no chão (e ao entrar na parede); no ar, só com um aperto novo.
   if (p.onGround) p.jumpsLeft = MOVE.AIR_JUMPS;
-  const doubleJumping = !onWall && !jumping && !wallJumping && !p.onGround && input.jumpPressed
+  const doubleJumping = !onWall && !p.slam && !jumping && !wallJumping && !p.onGround && input.jumpPressed
     && p.jumpsLeft > 0;
 
   // Deslize e agachar (F1-10).
@@ -151,6 +163,9 @@ export function stepPlayer(p, input, map, dt) {
   const dir = amount > 0 ? { x: wish.x / amount, y: 0, z: wish.z / amount } : null;
   if (onWall) {
     // A corrida na parede já cuidou da velocidade neste passo.
+  } else if (p.slam) {
+    // Slam: despenca em linha reta, sem velocidade horizontal e sem controle.
+    p.vel = { x: 0, y: -MOVE.SLAM_SPEED, z: 0 };
   } else if (wallJumping) {
     // Empurra para longe da parede e para cima, mantendo a velocidade ao longo dela.
     const n = p.wall.normal;
@@ -183,11 +198,18 @@ export function stepPlayer(p, input, map, dt) {
   }
 
   if (jumping) {
-    p.vel.y = MOVE.JUMP_SPEED;
     p.onGround = false;
     p.coyote = 0; // a tolerância de borda vale para um pulo só
     p.jumpBuffer = 0;
-    p.events.push({ type: 'jump' });
+    if (p.slamJumpWindow > 0) {
+      // Pulo de slam: mais alto quanto maior a queda do slam, até SLAM_JUMP_MAX.
+      p.vel.y = Math.min(MOVE.SLAM_JUMP_BASE + p.slamHeight * MOVE.SLAM_JUMP_PER_METER, MOVE.SLAM_JUMP_MAX);
+      p.slamJumpWindow = 0;
+      p.events.push({ type: 'slamJump', height: p.slamHeight });
+    } else {
+      p.vel.y = MOVE.JUMP_SPEED;
+      p.events.push({ type: 'jump' });
+    }
   }
 
   if (doubleJumping) {
@@ -197,10 +219,19 @@ export function stepPlayer(p, input, map, dt) {
     p.events.push({ type: 'doubleJump' });
   }
 
-  stepBody(p, map, dt, p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
+  // Slam cai a velocidade constante (sem gravidade somando); corrida na parede, gravidade reduzida.
+  stepBody(p, map, dt, p.slam ? 0 : p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
   updateWall(p, map, dt); // detector de parede (F1-11)
   if (p.wallrun && p.onGround) endWallrunOnLanding(p);
-  p.state = p.wallrun ? 'wallrun' : p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
+  if (p.slam && p.onGround) {
+    // Bateu: registra a altura da queda e abre a janela do pulo de slam.
+    const height = Math.max(0, p.slam.startY - p.pos.y);
+    p.slam = null;
+    p.slamHeight = height;
+    p.slamJumpWindow = MOVE.SLAM_JUMP_WINDOW;
+    p.events.push({ type: 'slamLand', height });
+  }
+  p.state = p.slam ? 'slam' : p.wallrun ? 'wallrun' : p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
   return p;
 }
 
