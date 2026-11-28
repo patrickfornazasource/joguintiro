@@ -41,12 +41,13 @@ test('descer o corrimão termina mais rápido que entrou', () => {
 test('pular sai do trilho, para cima com RAIL_EXIT_UP', () => {
   const p = dropOnRail({ x: 0, y: 0, z: -6 });
   for (let i = 0; i < 10; i++) stepPlayer(p, emptyInput(), map, DT);
-  const along = Math.hypot(p.vel.x, p.vel.z);
+  const along = Math.abs(p.rail.v); // velocidade no trilho (inclinado: parte dela desce)
   stepPlayer(p, input({ jump: true, jumpPressed: true }), map, DT);
   assert.equal(p.rail, null);
   assert.equal(reasonOf(p), 'jump');
   assert.ok(Math.abs(p.vel.y - (MOVE.RAIL_EXIT_UP - MOVE.GRAVITY * DT)) < 1e-9, `para cima: ${p.vel.y}`);
-  assert.ok(Math.abs(Math.hypot(p.vel.x, p.vel.z) - along) < 1e-9, 'mantém a velocidade na horizontal');
+  // Pedido do dono: o pulo não corta a velocidade; toda a velocidade do trilho vira horizontal.
+  assert.ok(Math.abs(Math.hypot(p.vel.x, p.vel.z) - along) < 1e-9, `mantém toda a velocidade na horizontal: ${Math.hypot(p.vel.x, p.vel.z)} de ${along}`);
   assert.equal(has(p, 'doubleJump'), false, 'o mesmo aperto não vira pulo duplo');
 });
 
@@ -82,9 +83,10 @@ test('subindo o trilho freia e volta descendo', () => {
 });
 
 test('velocidade no trilho não passa de RAIL_MAX_SPEED', () => {
-  const steep = rail({ x: 0, y: 80, z: 40 }, { x: 0, y: 1, z: -40 });
+  // Longo e íngreme: a descida passa do limite (45 m/s) antes do fim.
+  const steep = rail({ x: 0, y: 200, z: 100 }, { x: 0, y: 1, z: -100 });
   const m = { id: 't', name: 't', boxes: [floor, steep], spawns: [] };
-  const p = dropOnRail({ x: 0, y: 0, z: -10 }, m, { x: 0, y: 79.3, z: 39 }); // logo acima do trilho
+  const p = dropOnRail({ x: 0, y: 0, z: -10 }, m, { x: 0, y: 199.3, z: 99 }); // logo acima do trilho
   assert.ok(p.rail);
   let max = 0;
   for (let i = 0; i < 10 / DT && p.rail; i++) {

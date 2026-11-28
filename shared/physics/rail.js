@@ -4,8 +4,9 @@
 // Entrar: deslizando ou no ar, com os pés perto do trilho (menos de RAIL_SNAP_DIST) e
 // velocidade a favor dele (acima de RAIL_MIN_SPEED). No trilho, os pés ficam presos ao
 // segmento e a gravidade projetada acelera na descida (e freia na subida), até RAIL_MAX_SPEED.
-// Sair: fim do trilho (mantém a velocidade), pulo (sai para cima com RAIL_EXIT_UP) ou um
-// novo aperto de agachar.
+// Entra com toda a velocidade horizontal (mesmo chegando em diagonal).
+// Sair: fim do trilho ou um novo aperto de agachar (mantém a velocidade e a direção do trilho),
+// ou pulo (sai para cima com RAIL_EXIT_UP, sem perder a velocidade horizontal).
 import { MOVE } from '../constants.js';
 import { BOX_TYPES as T, railSegment } from '../maps/format.js';
 
@@ -48,8 +49,12 @@ export function updateRail(p, input, map, dt, cfg = MOVE) {
   if (p.rail) {
     const r = p.rail;
     if (input.jumpPressed) {
-      // Pulo: sai para cima, mantendo a velocidade ao longo do trilho na horizontal.
-      p.vel = { x: r.t.x * r.v, y: cfg.RAIL_EXIT_UP, z: r.t.z * r.v };
+      // Pulo: sai para cima com RAIL_EXIT_UP e mantém TODA a velocidade do trilho na horizontal,
+      // na direção do trilho (num trilho inclinado, a parte que descia vira horizontal: o pulo
+      // não corta a velocidade; pedido do dono).
+      const h = Math.hypot(r.t.x, r.t.z);
+      const k = h > 1e-9 ? r.v / h : 0;
+      p.vel = { x: r.t.x * k, y: cfg.RAIL_EXIT_UP, z: r.t.z * k };
       p.coyote = 0;
       p.jumpBuffer = 0;
       endRail(p, 'jump');
@@ -87,11 +92,14 @@ export function updateRail(p, input, map, dt, cfg = MOVE) {
     if (!p.onGround && p.pos.y < c.point.y - 0.2) continue;
     const along = dot(p.vel, c.t);
     if (Math.abs(along) < cfg.RAIL_MIN_SPEED) continue; // precisa vir a favor do trilho
+    // Entra com TODA a velocidade horizontal (não só a parte a favor do trilho): chegar em
+    // diagonal não perde velocidade, só muda de direção (pedido do dono). O sentido é o de `along`.
+    const entry = Math.max(Math.abs(along), Math.hypot(p.vel.x, p.vel.z));
     if (p.sliding) {
       p.sliding = false;
       p.events.push({ type: 'slideEnd' });
     }
-    p.rail = { box: b, from: seg.from, t: c.t, len: c.len, s: c.s, v: Math.min(Math.abs(along), cfg.RAIL_MAX_SPEED) * Math.sign(along) };
+    p.rail = { box: b, from: seg.from, t: c.t, len: c.len, s: c.s, v: Math.min(entry, cfg.RAIL_MAX_SPEED) * Math.sign(along) };
     placeOnRail(p);
     p.onGround = false;
     p.events.push({ type: 'railStart' });

@@ -74,7 +74,7 @@ test('estação 6: do alto da torre, slam no X e pulo de slam + duplo até a pla
   for (let i = 0; i < 6 / DT; i++) {
     if (landed && p.onGround && p.pos.y > S.target.top - 0.1) break;
     let inp;
-    if (!slammed && !p.onGround) {
+    if (!slammed && !p.onGround && p.pos.z < (S.spot.minZ + S.spot.maxZ) / 2 + 0.3) { // em cima do meio do X
       slammed = true;
       inp = input({ yaw, crouch: true, crouchPressed: true }); // C ao sair da torre: slam
     } else if (!slammed) inp = input({ moveZ: 1, yaw });
