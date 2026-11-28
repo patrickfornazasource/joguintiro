@@ -41,6 +41,37 @@ export function box(cx, cy, cz, sx, sy, sz, type = BOX_TYPES.SOLID, extra = {}) 
   };
 }
 
+/** Espessura visual de um corrimão (m). */
+const RAIL_THICKNESS = 0.15;
+
+/**
+ * Cria um corrimão (trilho reto) de `from` até `to`, pontos onde ficam os pés do jogador.
+ * A caixa (min/max) envolve o trilho; o desenho usa from/to.
+ */
+export function rail(from, to, extra = {}) {
+  const h = RAIL_THICKNESS / 2;
+  return {
+    ...extra,
+    min: { x: Math.min(from.x, to.x) - h, y: Math.min(from.y, to.y) - h, z: Math.min(from.z, to.z) - h },
+    max: { x: Math.max(from.x, to.x) + h, y: Math.max(from.y, to.y) + h, z: Math.max(from.z, to.z) + h },
+    type: BOX_TYPES.RAIL,
+    from: { ...from },
+    to: { ...to },
+  };
+}
+
+/** Trilho de um bloco `rail`: from/to, ou (sem eles) a linha do centro ao longo do lado maior. */
+export function railSegment(b) {
+  if (b.from && b.to) return { from: b.from, to: b.to };
+  const c = { x: (b.min.x + b.max.x) / 2, y: (b.min.y + b.max.y) / 2, z: (b.min.z + b.max.z) / 2 };
+  const sx = b.max.x - b.min.x;
+  const sz = b.max.z - b.min.z;
+  const sy = b.max.y - b.min.y;
+  if (sx >= sz && sx >= sy) return { from: { ...c, x: b.min.x }, to: { ...c, x: b.max.x } };
+  if (sz >= sx && sz >= sy) return { from: { ...c, z: b.min.z }, to: { ...c, z: b.max.z } };
+  return { from: { ...c, y: b.min.y }, to: { ...c, y: b.max.y } };
+}
+
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isVec = (v) => v && isNum(v.x) && isNum(v.y) && isNum(v.z);
 
@@ -78,6 +109,12 @@ export function validateMap(map) {
         if (!(b.min[axis] < b.max[axis])) errors.push(`caixa ${i}: invertida ou vazia no eixo ${axis}`);
       }
       if (!KNOWN_TYPES.has(b.type)) errors.push(`caixa ${i}: tipo desconhecido "${b.type}"`);
+      if (b.type === BOX_TYPES.RAIL && (b.from || b.to)) {
+        if (!isVec(b.from) || !isVec(b.to)) errors.push(`caixa ${i}: corrimão com from/to inválidos`);
+        else if (Math.hypot(b.to.x - b.from.x, b.to.y - b.from.y, b.to.z - b.from.z) < 0.5) {
+          errors.push(`caixa ${i}: corrimão curto demais`);
+        }
+      }
     });
   }
 

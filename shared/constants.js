@@ -147,6 +147,18 @@ export const MOVE = Object.freeze({
   DASH_END_SPEED_KEEP: 0.7,
   /** Plataforma de salto sem direção: velocidade para cima ao pousar (m/s). Cerca de 6 m de altura. */
   PAD_SPEED: 17,
+  /** Corrimão: distância máxima dos pés ao trilho para grudar nele (m). */
+  RAIL_SNAP_DIST: 0.6,
+  /** Corrimão: aceleração da gravidade ao longo do trilho (m/s², multiplicada pela inclinação). */
+  RAIL_GRAVITY_ACCEL: 10,
+  /** Corrimão: velocidade máxima no trilho (m/s). */
+  RAIL_MAX_SPEED: 28,
+  /** Corrimão: velocidade para cima ao pular do trilho (m/s). */
+  RAIL_EXIT_UP: 5,
+  /** Corrimão: velocidade mínima a favor do trilho para grudar (m/s). */
+  RAIL_MIN_SPEED: 2,
+  /** Corrimão: tempo até poder grudar de novo no mesmo trilho (s). */
+  RAIL_REATTACH_DELAY: 0.3,
 });
 
 /** Câmera e mouse. */

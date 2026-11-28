@@ -1,7 +1,7 @@
 // Desenha um mapa (shared/maps) em cinza, com cor por tipo de bloco e contorno
 // nas arestas para facilitar a leitura das formas.
 import * as THREE from 'three';
-import { BOX_TYPES as T } from '../../shared/maps/format.js';
+import { BOX_TYPES as T, railSegment } from '../../shared/maps/format.js';
 
 /** Cores por tipo (só visual). */
 const STYLE = {
@@ -11,6 +11,9 @@ const STYLE = {
   [T.RAIL]: { color: 0xff8c1a, edge: 0x6b3500 },
   [T.UV]: { color: 0x9b59ff, edge: 0x3a1a6b },
 };
+
+/** Espessura da barra do corrimão inclinado (m). */
+const RAIL_BAR = 0.12;
 
 /** Altura da faixa ciano no topo das paredes de corrida (m). */
 const STRIPE_HEIGHT = 0.15;
@@ -38,6 +41,20 @@ export function createMapMeshes(map) {
 
   for (const b of map.boxes) {
     const style = STYLE[b.type] ?? STYLE[T.SOLID];
+    if (b.type === T.RAIL && b.from && b.to) {
+      // Corrimão inclinado: barra fina de `from` até `to` (a caixa dele é só o envelope).
+      const seg = railSegment(b);
+      const a = new THREE.Vector3(seg.from.x, seg.from.y, seg.from.z);
+      const c = new THREE.Vector3(seg.to.x, seg.to.y, seg.to.z);
+      const dir = c.clone().sub(a);
+      const bar = new THREE.Mesh(geometry, mat(style.color));
+      bar.position.copy(a.clone().add(c).multiplyScalar(0.5));
+      bar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir.clone().normalize());
+      bar.scale.set(RAIL_BAR, RAIL_BAR, dir.length());
+      bar.userData.boxType = b.type;
+      group.add(bar);
+      continue;
+    }
     const size = new THREE.Vector3(b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z);
     const center = new THREE.Vector3(
       (b.min.x + b.max.x) / 2,

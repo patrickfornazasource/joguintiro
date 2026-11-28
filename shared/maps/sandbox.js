@@ -1,7 +1,7 @@
 // Mapa de testes da Fase 1: chão 60x60 m, paredes em volta, alguns blocos,
 // uma escada simples e exemplos de cada tipo de bloco.
 // Medidas em metros. O topo do chão fica em y = 0.
-import { box, BOX_TYPES as T } from './format.js';
+import { box, rail, BOX_TYPES as T } from './format.js';
 
 const STEP_RISE = 0.25; // altura de cada degrau (m)
 const STEP_DEPTH = 0.5; // profundidade de cada degrau (m)
@@ -70,6 +70,16 @@ export const PAD_TO_HIGH = Object.freeze({
   target: { x: 25, z: 21, width: 6, depth: 8, top: 6 }, // plataforma alta: x de 22 a 28, z de 17 a 25
 });
 
+/**
+ * Corrimão ao lado da escada simples (F1-17). Pontos dos pés: desce do alto (perto do fundo do
+ * patamar, z = 12,5, 0,2 m acima dele) até perto do chão (z = 5), encostado por fora da borda
+ * oeste do patamar (o corpo de quem desliza não encosta no patamar nem na escada).
+ */
+export const STAIR_RAIL = Object.freeze({
+  from: Object.freeze({ x: -8.4, y: 1.7, z: 12.5 }),
+  to: Object.freeze({ x: -8.4, y: 0.3, z: 5 }),
+});
+
 /** Altura das paredes externas do Sandbox (m). Ver o comentário nas paredes. */
 export const OUTER_WALL_HEIGHT = 16;
 
@@ -102,6 +112,8 @@ export const sandbox = Object.freeze({
     box(0, 1, -18, 10, 0.15, 0.15, T.RAIL),
     // Escada simples com patamar
     ...stairs(-6, 6, 3),
+    // Corrimão da escada (F1-17): do alto do patamar até perto do chão, no lado oeste da escada
+    rail(STAIR_RAIL.from, STAIR_RAIL.to),
     // Corredor de corrida na parede com "fosso" (F1-12)
     ...wallrunCorridor(),
   ],

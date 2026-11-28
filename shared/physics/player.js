@@ -19,6 +19,7 @@ import { BOX_TYPES } from '../maps/format.js';
 import { updateWall } from './walls.js';
 import { updateWallrun, endWallrun } from './wallrun.js';
 import { startDash, stepDash, rechargeDash } from './dash.js';
+import { updateRail } from './rail.js';
 import { wishDir, forwardOf, accelerate, airAccelerate, applyFriction, redirectHorizontal } from './move.js';
 
 /** Entrada vazia (nada apertado), útil como padrão e em testes. */
@@ -83,6 +84,10 @@ export function createPlayer(spawn) {
     /** Tempo que resta da janela do pulo de slam (s), e a altura da queda que o alimenta (m). */
     slamJumpWindow: 0,
     slamHeight: 0,
+    /** Corrimão em andamento: { box, from, t, len, s, v }, ou null (F1-17). */
+    rail: null,
+    /** Último corrimão e há quanto tempo saiu: { box, age }, ou null. */
+    railLast: null,
     /** Altura atual do corpo (m): PLAYER.HEIGHT em pé, PLAYER.CROUCH_HEIGHT agachado. */
     height: PLAYER.HEIGHT,
 
@@ -132,9 +137,17 @@ export function stepPlayer(p, input, map, dt) {
   // Pula se: está no chão (ou acabou de sair da borda) E apertou agora ou há pouco,
   // ou está no chão segurando o pulo (bunny hop: pula de novo ao pousar).
   // Corrida na parede (F1-12): entrar, continuar, sair ou pular para fora. Tem prioridade.
-  // Dash provisório (F1-15): Shift com carga, fora do slam. Interrompe a corrida na parede.
+  // Corrimão (F1-17): no trilho, a posição é dele (sem a física normal neste passo).
   rechargeDash(p, dt);
-  if (input.dashPressed && !p.dash && !p.slam && p.dashCharges >= 1) {
+  const railing = updateRail(p, input, map, dt); // 'riding' | 'jumped' | 'released' | null
+  if (railing === 'riding') {
+    p.state = 'rail';
+    return p;
+  }
+  const railJumped = railing === 'jumped';
+
+  // Dash provisório (F1-15): Shift com carga, fora do slam. Interrompe a corrida na parede.
+  if (!railJumped && input.dashPressed && !p.dash && !p.slam && p.dashCharges >= 1) {
     if (p.wallrun) endWallrun(p);
     const w = wishDir(input);
     const len = Math.hypot(w.x, w.z);
@@ -144,8 +157,9 @@ export function stepPlayer(p, input, map, dt) {
   }
   const dashing = stepDash(p, dt); // durante o dash, a velocidade é dele
 
-  const wallrunning = dashing ? null : updateWallrun(p, input, dt); // 'running' | 'jumped' | null
-  const onWall = wallrunning !== null;
+  const wallrunning = dashing || railJumped ? null : updateWallrun(p, input, dt); // 'running' | 'jumped' | null
+  // Pulo do trilho conta como "já cuidado" neste passo (como o pulo da corrida na parede).
+  const onWall = wallrunning !== null || railJumped;
 
   const canJump = p.onGround || p.coyote > 0;
   const wantsJump = p.jumpBuffer > 0 || (input.jump && p.onGround);
@@ -153,7 +167,8 @@ export function stepPlayer(p, input, map, dt) {
 
   // Golpe no chão (F1-14): agachar no ar (fora da corrida na parede) despenca em linha reta.
   p.slamJumpWindow = Math.max(0, p.slamJumpWindow - dt);
-  if (!dashing && !onWall && !jumping && !p.onGround && !p.slam && input.crouchPressed) {
+  // Soltar do corrimão agachando usa o aperto: não inicia o slam no mesmo passo (F1-17).
+  if (railing !== 'released' && !dashing && !onWall && !jumping && !p.onGround && !p.slam && input.crouchPressed) {
     p.slam = { startY: p.pos.y };
     p.events.push({ type: 'slamStart' });
   }

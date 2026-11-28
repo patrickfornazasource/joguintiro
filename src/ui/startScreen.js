@@ -8,6 +8,7 @@ const CONTROLS = [
   ['C ou Ctrl', 'agachar; correndo: deslizar; no ar: golpe no chão'],
   ['Espaço logo depois do golpe', 'pulo de slam (mais alto quanto maior a queda)'],
   ['Shift', 'dash para o lado das teclas (3 cargas, provisório)'],
+  ['Corrimão laranja', 'cair ou deslizar em cima dele para descer (Espaço sai)'],
   ['Pular de lado numa parede ciano', 'correr na parede (Espaço sai dela)'],
   ['Espaço encostado numa parede no ar', 'pulo na parede (até 3 seguidos)'],
   ['Mouse', 'olhar'],
