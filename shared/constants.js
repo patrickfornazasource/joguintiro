@@ -169,6 +169,27 @@ export const MOVE = Object.freeze({
   RAIL_REATTACH_DELAY: 0.3,
 });
 
+/** Carga Cinética (F2-01): a "munição" de todas as armas. GDD seção 3, Pilar 1. */
+export const CHARGE = Object.freeze({
+  /** Máximo da barra (pontos). Fixo pelo GDD (0 a 100): não entra no painel F4. */
+  CHARGE_MAX: 100,
+  /** Ganho mínimo, mesmo parado (pontos/s). Provisório (sugestão da ficha F2-01). */
+  CHARGE_IDLE_RATE: 2,
+  /**
+   * Ganho por m/s acima da velocidade de andar (MOVE.WALK_SPEED), em pontos/s por m/s.
+   * A 20 m/s: (20 - 9) x 0,8 = +8,8/s. Provisório.
+   */
+  CHARGE_PER_SPEED: 0.8,
+  /** Ganho extra correndo na parede (pontos/s). Provisório. */
+  CHARGE_WALLRUN_RATE: 6,
+  /** Bônus por pulo na parede (pontos). Provisório. */
+  CHARGE_WALLJUMP_BONUS: 5,
+  /** Duração mínima para o deslize contar como longo (s). Provisório. */
+  CHARGE_LONG_SLIDE_TIME: 0.6,
+  /** Bônus por deslize longo (pontos), dado quando o deslize termina. Provisório. */
+  CHARGE_LONG_SLIDE_BONUS: 8,
+});
+
 /** Painel de ajuste ao vivo (F4, F1-20): só com ?ajuste=1 no endereço. */
 export const TUNING = Object.freeze({
   /** Menor valor de cada controle, em vezes o valor padrão (0,25 = um quarto do padrão). */

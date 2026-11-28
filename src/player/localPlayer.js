@@ -1,7 +1,8 @@
 // Jogador local: junta a entrada de cada passo, roda a física compartilhada e guarda
 // a posição anterior e a atual para a câmera interpolar entre passos.
 // Sem Three.js e sem DOM: testável no Node (a câmera é atualizada em main.js).
-import { PLAYER, VIEW, MOVE } from '../../shared/constants.js';
+import { PLAYER, VIEW, MOVE, CHARGE } from '../../shared/constants.js';
+import { createCharge, updateCharge, refillCharge } from '../../shared/combat/charge.js';
 import { createPlayer, stepPlayer, emptyInput } from '../../shared/physics/player.js';
 import { createStepSmoother } from '../core/stepSmoothing.js';
 import { rightOf } from '../../shared/physics/move.js';
@@ -168,14 +169,16 @@ export function mapArea(map) {
  * @param {{ map: object, spawnIndex?: number, sensitivity?: number, fovBase?: number, move?: object }} opts
  *   move: números do movimento (padrão MOVE). O painel de ajuste (F1-20) passa uma cópia
  *   editável; mudar um valor nela vale no passo seguinte.
+ *   chargeCfg: números da Carga (padrão CHARGE; o painel F4 passa uma cópia editável, F2-01).
  */
-export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY, fovBase = CAMERA.FOV_BASE, move = MOVE }) {
+export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY, fovBase = CAMERA.FOV_BASE, move = MOVE, chargeCfg = CHARGE }) {
   let spawn = map.spawns[spawnIndex] ?? map.spawns[0];
   let lastGround = { x: spawn.x, z: spawn.z }; // último lugar onde pisou no chão
   const smoother = createStepSmoother(move);
   const area = mapArea(map);
   let outOfMap = 0; // vezes que saiu do mapa e voltou (rede de segurança)
   let player = createPlayer(spawn, move);
+  const charge = createCharge(chargeCfg); // Carga Cinética (F2-01): começa cheia
   let prev = { ...player.pos };
   let yaw = spawn.yaw ?? 0;
   let pitch = 0;
@@ -210,6 +213,7 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     spawn = at;
     lastGround = { x: at.x, z: at.z };
     player = createPlayer(spawn, move);
+    refillCharge(charge, chargeCfg); // GDD seção 11: renasce com Carga cheia
     prev = { ...player.pos };
     smoother.reset();
     eyeHeight = PLAYER.EYE_HEIGHT;
@@ -260,6 +264,10 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     },
     /** Números do movimento em uso (MOVE, ou a cópia do painel de ajuste). */
     move,
+    /** Carga Cinética (F2-01): { value, rate }. */
+    charge,
+    /** Números da Carga em uso (CHARGE, ou a cópia do painel de ajuste). */
+    chargeCfg,
     /** Volta ao ponto de nascimento (estação) mais perto de onde está agora (tecla R). */
     respawnNearest() {
       respawn(nearestSpawn(player.pos.x, player.pos.z));
@@ -281,6 +289,7 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       prev = { ...player.pos };
       const wasOnGround = player.onGround;
       stepPlayer(player, input, map, dt, move);
+      updateCharge(charge, player, dt, chargeCfg, move); // depois da física: lê velocidade e eventos
       // Afundamento ao pousar de alto (> 3 m): mede a queda desde o ponto mais alto no ar.
       if (!player.onGround) airPeak = Math.max(airPeak ?? player.pos.y, player.pos.y);
       if (player.onGround && !wasOnGround && airPeak !== null) {

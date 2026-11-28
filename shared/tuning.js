@@ -3,7 +3,7 @@
 // (de TUNING.MIN_FACTOR x a TUNING.MAX_FACTOR x o padrão) e limpa valores vindos de fora
 // (painel, valores salvos no navegador): fora da faixa é cortado, inválido volta ao padrão.
 // O painel em si (lil-gui) fica em src/ui/tuning.js.
-import { MOVE, TUNING } from './constants.js';
+import { MOVE, CHARGE, TUNING } from './constants.js';
 
 /** Tipos de valor: número livre, inteiro (contagens) ou fração de 0 a 1. */
 const NUM = 'número';
@@ -117,10 +117,39 @@ export const TUNING_GROUPS = Object.freeze([
   },
 ]);
 
+/**
+ * Grupo da Carga (F2-01). `CHARGE_MAX` fica fora: o GDD fixa a barra em 0 a 100.
+ * Toda outra chave de CHARGE precisa aparecer aqui (um teste confere).
+ */
+export const CHARGE_TUNING_GROUPS = Object.freeze([
+  {
+    name: 'Carga',
+    items: [
+      ['CHARGE_IDLE_RATE', 'Carga parado', 'pontos/s', NUM],
+      ['CHARGE_PER_SPEED', 'Carga por m/s acima de andar', 'pontos/s por m/s', NUM],
+      ['CHARGE_WALLRUN_RATE', 'Carga extra na corrida na parede', 'pontos/s', NUM],
+      ['CHARGE_WALLJUMP_BONUS', 'Bônus por pulo na parede', 'pontos', NUM],
+      ['CHARGE_LONG_SLIDE_TIME', 'Deslize longo a partir de', 's', NUM],
+      ['CHARGE_LONG_SLIDE_BONUS', 'Bônus por deslize longo', 'pontos', NUM],
+    ],
+  },
+]);
+
+/**
+ * Conjuntos de números do painel: cada um com o objeto padrão (congelado) e os grupos.
+ * Chaves são únicas entre os conjuntos (assim os valores salvos podem ficar juntos).
+ */
+export const TUNING_SETS = Object.freeze([
+  { id: 'MOVE', base: MOVE, groups: TUNING_GROUPS },
+  { id: 'CHARGE', base: CHARGE, groups: CHARGE_TUNING_GROUPS },
+]);
+
 /** Item da lista por chave: { key, label, unit, kind, group }. */
 const BY_KEY = new Map();
-for (const g of TUNING_GROUPS) {
-  for (const [key, label, unit, kind] of g.items) BY_KEY.set(key, { key, label, unit, kind, group: g.name });
+for (const set of TUNING_SETS) {
+  for (const g of set.groups) {
+    for (const [key, label, unit, kind] of g.items) BY_KEY.set(key, { key, label, unit, kind, group: g.name });
+  }
 }
 
 /** Descrição de um valor (nome, unidade, tipo, grupo), ou undefined se não existe. */
@@ -153,15 +182,20 @@ export function tuningRange(key, base = MOVE) {
 }
 
 /**
- * Monta um objeto completo de números do movimento a partir de valores quaisquer:
- * chave faltando, não numérica ou não finita fica com o padrão; fora da faixa é cortada;
- * inteiros são arredondados; chaves que não existem em MOVE são ignoradas.
+ * Monta um objeto completo de números (do movimento, ou de outro conjunto via `base`) a partir de
+ * valores quaisquer: chave faltando, não numérica ou não finita fica com o padrão; fora da faixa
+ * é cortada; inteiros são arredondados; chaves que não existem em `base` são ignoradas; chaves
+ * que não estão no painel (ex.: CHARGE_MAX) ficam sempre no padrão.
  * @param {object|null|undefined} values
  * @returns {Record<string, number>} cópia nova e editável
  */
 export function sanitizeMove(values, base = MOVE) {
   const out = {};
   for (const key of Object.keys(base)) {
+    if (!BY_KEY.has(key)) {
+      out[key] = base[key]; // fora do painel: fixo
+      continue;
+    }
     const { min, max } = tuningRange(key, base);
     const raw = values?.[key];
     let v = typeof raw === 'number' && Number.isFinite(raw) ? raw : base[key];
@@ -186,11 +220,21 @@ export function changedValues(cfg, base = MOVE) {
  * completa ("todos", que pode ser lida de volta por sanitizeMove).
  */
 export function tuningJson(cfg, base = MOVE) {
+  return tuningJsonAll([{ cfg, base }]);
+}
+
+/**
+ * Como tuningJson, juntando vários conjuntos ([{ cfg, base }], ex.: movimento e Carga) num texto.
+ * As chaves são únicas entre os conjuntos.
+ */
+export function tuningJsonAll(sets) {
   const alterados = {};
-  for (const [key, value] of Object.entries(changedValues(cfg, base))) {
-    alterados[key] = { nome: BY_KEY.get(key)?.label ?? key, padrao: base[key], novo: value };
-  }
   const todos = {};
-  for (const key of Object.keys(base)) todos[key] = cfg[key];
+  for (const { cfg, base } of sets) {
+    for (const [key, value] of Object.entries(changedValues(cfg, base))) {
+      alterados[key] = { nome: BY_KEY.get(key)?.label ?? key, padrao: base[key], novo: value };
+    }
+    for (const key of Object.keys(base)) todos[key] = cfg[key];
+  }
   return JSON.stringify({ alterados, todos }, null, 2);
 }

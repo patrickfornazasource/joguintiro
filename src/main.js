@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PHYSICS, PLAYER, DEMO, VIEW, MOVE } from '../shared/constants.js';
+import { PHYSICS, PLAYER, DEMO, VIEW, MOVE, CHARGE } from '../shared/constants.js';
 import { createLoop } from './core/loop.js';
 import { attachInput, ACTIONS } from './core/input.js';
 import { createDebugPanel, createRateCounter } from './ui/debug.js';
@@ -85,8 +85,8 @@ const spawnIndex = Number.isInteger(spawnParam) && spawnParam >= 1 && spawnParam
 // editável (com os valores salvos neste navegador); sem ?ajuste=1, vale sempre o padrão.
 const tuningOn = isTuningEnabled(window.location.search);
 const tuning = tuningOn ? loadTuning(storage) : null;
-const me = createLocalPlayer({ map, sensitivity, fovBase, spawnIndex, move: tuning ? tuning.cfg : MOVE });
-const tuningPanel = tuning ? createTuningPanel({ cfg: tuning.cfg, storage, loaded: tuning.loaded }) : null;
+const me = createLocalPlayer({ map, sensitivity, fovBase, spawnIndex, move: tuning ? tuning.cfg : MOVE, chargeCfg: tuning ? tuning.charge : CHARGE });
+const tuningPanel = tuning ? createTuningPanel({ cfg: tuning.cfg, charge: tuning.charge, storage, loaded: tuning.loaded }) : null;
 if (tuningPanel) {
   // Na fase de captura: os controles do painel (lil-gui) seguram as teclas apertadas neles,
   // e o F4 precisa funcionar também com o foco dentro do painel.
@@ -177,6 +177,7 @@ const loop = createLoop({
       : '-');
     debug.set('pulo duplo', p.jumpsLeft > 0 ? 'disponível' : 'usado');
     debug.set('pulos na parede', `${p.wallJumpsLeft} de ${me.move.WALL_JUMP_MAX}`);
+    debug.set('Carga (F2)', `${me.charge.value.toFixed(1)} de ${me.chargeCfg.CHARGE_MAX} (+${me.charge.rate.toFixed(1)}/s)`);
     debug.set('dash (cargas)', `${p.dashCharges} de ${me.move.DASH_CHARGES}`);
     debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado', wallrun: 'correndo na parede', slam: 'golpe no chão', dash: 'dash', rail: 'no corrimão' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);

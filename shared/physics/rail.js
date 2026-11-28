@@ -97,7 +97,7 @@ export function updateRail(p, input, map, dt, cfg = MOVE) {
     const entry = Math.max(Math.abs(along), Math.hypot(p.vel.x, p.vel.z));
     if (p.sliding) {
       p.sliding = false;
-      p.events.push({ type: 'slideEnd' });
+      p.events.push({ type: 'slideEnd', duration: p.slideTime ?? 0 });
     }
     p.rail = { box: b, from: seg.from, t: c.t, len: c.len, s: c.s, v: Math.min(entry, cfg.RAIL_MAX_SPEED) * Math.sign(along) };
     placeOnRail(p);

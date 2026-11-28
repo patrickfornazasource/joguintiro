@@ -68,7 +68,7 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 
 ## F2: Combate e Carga Cinética
 
-- [ ] **[F2-01](tarefas/F2-01.md)** Sistema de Carga. Enche com velocidade e eventos (pulo na parede, deslize). Regras do GDD, seção 3.
+- [x] **[F2-01](tarefas/F2-01.md)** Sistema de Carga. Enche com velocidade e eventos (pulo na parede, deslize). Regras do GDD, seção 3.
   Pronto quando: testes cobrem ganho parado, ganho em alta velocidade e bônus.
 - [ ] **[F2-02](tarefas/F2-02.md)** Rifle Cinético. Tiro instantâneo (raycast), custo de Carga, dano escala com velocidade, coice.
 - [ ] **[F2-03](tarefas/F2-03.md)** Descarga (disparo alternativo). Gasta toda a Carga, impulso proporcional, dano em cone.

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MOVE, PHYSICS, TUNING } from '../shared/constants.js';
-import { TUNING_GROUPS, tuningItem, tuningRange, sanitizeMove, changedValues, tuningJson } from '../shared/tuning.js';
+import { MOVE, PHYSICS, TUNING, CHARGE } from '../shared/constants.js';
+import { TUNING_GROUPS, CHARGE_TUNING_GROUPS, TUNING_SETS, tuningItem, tuningRange, sanitizeMove, changedValues, tuningJson, tuningJsonAll } from '../shared/tuning.js';
 import { treino } from '../shared/maps/treino.js';
 import { getMap } from '../shared/maps/index.js';
 import { createPlayer, stepPlayer, emptyInput } from '../shared/physics/player.js';
@@ -91,7 +91,7 @@ test('?ajuste=1 liga o painel; salvar guarda só os mudados e volta ao abrir; sa
   assert.equal(isTuningEnabled(''), false);
   assert.equal(isTuningEnabled('?ajuste=0'), false);
   const storage = memoryStorage();
-  assert.deepEqual(loadTuning(storage), { cfg: { ...MOVE }, loaded: 0 });
+  assert.deepEqual(loadTuning(storage), { cfg: { ...MOVE }, charge: { ...CHARGE }, loaded: 0 });
   const cfg = sanitizeMove({ JUMP_SPEED: 11 });
   assert.equal(saveTuning(storage, cfg), true);
   assert.deepEqual(JSON.parse(storage.data.get(TUNING_STORAGE_KEY)), { JUMP_SPEED: 11 });
@@ -264,4 +264,35 @@ test('mapArea cobre as paredes externas; mapa vazio não tem limite', () => {
   const p = createPlayer({ x: 0, y: 0, z: 0 });
   stepPlayer(p, emptyInput(), { boxes: [] }, DT);
   assert.ok(Number.isFinite(p.pos.y));
+});
+
+test('F2-01: o painel tem o grupo "Carga" com todos os números da Carga, menos o máximo (fixo pelo GDD)', () => {
+  const keys = CHARGE_TUNING_GROUPS.flatMap((g) => g.items.map(([k]) => k));
+  assert.deepEqual(CHARGE_TUNING_GROUPS.map((g) => g.name), ['Carga']);
+  assert.deepEqual([...keys].sort(), Object.keys(CHARGE).filter((k) => k !== 'CHARGE_MAX').sort());
+  for (const k of keys) assert.ok(tuningItem(k).label && tuningItem(k).unit, k);
+  // Chaves únicas entre os conjuntos (os valores salvos ficam juntos).
+  const all = TUNING_SETS.flatMap((set) => set.groups.flatMap((g) => g.items.map(([k]) => k)));
+  assert.equal(new Set(all).size, all.length);
+  // O máximo não muda pelo painel nem por valor salvo.
+  const c = sanitizeMove({ CHARGE_MAX: 300, CHARGE_IDLE_RATE: 1000, CHARGE_PER_SPEED: 1.2 }, CHARGE);
+  assert.equal(c.CHARGE_MAX, 100);
+  assert.equal(c.CHARGE_IDLE_RATE, CHARGE.CHARGE_IDLE_RATE * TUNING.MAX_FACTOR);
+  assert.equal(c.CHARGE_PER_SPEED, 1.2);
+});
+
+test('F2-01: salvar e carregar guarda movimento e Carga juntos; Copiar valores traz os dois', () => {
+  const storage = memoryStorage();
+  const cfg = sanitizeMove({ JUMP_SPEED: 10 });
+  const charge = sanitizeMove({ CHARGE_IDLE_RATE: 4 }, CHARGE);
+  assert.equal(saveTuning(storage, cfg, charge), true);
+  assert.deepEqual(JSON.parse(storage.data.get(TUNING_STORAGE_KEY)), { JUMP_SPEED: 10, CHARGE_IDLE_RATE: 4 });
+  const back = loadTuning(storage);
+  assert.equal(back.cfg.JUMP_SPEED, 10);
+  assert.equal(back.charge.CHARGE_IDLE_RATE, 4);
+  assert.equal(back.loaded, 2);
+  const data = JSON.parse(tuningJsonAll([{ cfg, base: MOVE }, { cfg: charge, base: CHARGE }]));
+  assert.deepEqual(Object.keys(data.alterados).sort(), ['CHARGE_IDLE_RATE', 'JUMP_SPEED']);
+  assert.equal(data.todos.CHARGE_MAX, 100);
+  assert.equal(data.todos.WALK_SPEED, MOVE.WALK_SPEED);
 });
