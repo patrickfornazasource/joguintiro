@@ -19,7 +19,7 @@ const DIRECTIONS = [
 ];
 
 /** De que lado do jogador (pelo olhar) fica uma direção do mundo. */
-function sideOf(yaw, toWall) {
+export function sideOf(yaw, toWall) {
   const f = forwardOf(yaw);
   const r = rightOf(yaw);
   const front = f.x * toWall.x + f.z * toWall.z;
@@ -62,6 +62,7 @@ export function detectWall(p, map) {
         type: b.type,
         side: sideOf(p.yaw ?? 0, toWall),
         distance: Math.max(0, distance),
+        box: b, // qual bloco é (para a regra de "mesma parede" da corrida na parede)
       };
     }
   }
@@ -82,7 +83,9 @@ export function updateWall(p, map, dt) {
   }
   p.wallAge = (p.wallAge ?? Infinity) + dt;
   if (p.wall && p.wallAge <= MOVE.WALL_MEMORY + 1e-9) {
-    p.wall = { ...p.wall, age: p.wallAge };
+    // Lado recalculado com o olhar atual (a normal não muda; o lado depende de para onde olha).
+    const toWall = { x: -p.wall.normal.x, y: 0, z: -p.wall.normal.z };
+    p.wall = { ...p.wall, age: p.wallAge, side: sideOf(p.yaw ?? 0, toWall) };
   } else {
     p.wall = null;
   }

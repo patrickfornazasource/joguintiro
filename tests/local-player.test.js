@@ -129,3 +129,16 @@ test('sensibilidade: ?sens= vale e é salva; inválida cai na salva ou na padrã
   assert.equal(resolveSensitivity('?sens=0.004', broken), 0.004);
   assert.equal(resolveSensitivity('', broken), VIEW.MOUSE_SENSITIVITY);
 });
+
+test('câmera inclina para o lado oposto à parede só correndo nela (F1-12)', async () => {
+  const { wallrunTiltTarget } = await import('../src/player/localPlayer.js');
+  const yaw = 0; // olhando para -z: +x é a direita
+  const wallRight = { wallrun: { normal: { x: -1, y: 0, z: 0 } } };
+  const wallLeft = { wallrun: { normal: { x: 1, y: 0, z: 0 } } };
+  const wallFront = { wallrun: { normal: { x: 0, y: 0, z: 1 } } };
+  assert.ok(Math.abs(wallrunTiltTarget(wallRight, yaw) - VIEW.WALLRUN_TILT) < 1e-12, 'parede à direita: cabeça para a esquerda');
+  assert.ok(Math.abs(wallrunTiltTarget(wallLeft, yaw) + VIEW.WALLRUN_TILT) < 1e-12, 'parede à esquerda: para a direita');
+  assert.ok(Math.abs(wallrunTiltTarget(wallFront, yaw)) < 1e-12, 'de frente: não inclina');
+  assert.equal(wallrunTiltTarget({ wallrun: null }, yaw), 0);
+  assert.ok(Math.abs(VIEW.WALLRUN_TILT - (10 * Math.PI) / 180) < 1e-12);
+});

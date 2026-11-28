@@ -3,6 +3,7 @@
 //
 // Mapa: { id, name, boxes: [{ min:{x,y,z}, max:{x,y,z}, type, ...extra }], spawns: [{ x, y, z, yaw }] }
 // Unidades: metros. y é a altura. yaw em radianos (0 = olhando para -z).
+import { PHYSICS, PLAYER } from '../constants.js';
 
 /** Tipos de bloco conhecidos. */
 export const BOX_TYPES = Object.freeze({
@@ -43,9 +44,16 @@ export function box(cx, cy, cz, sx, sy, sz, type = BOX_TYPES.SOLID, extra = {}) 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isVec = (v) => v && isNum(v.x) && isNum(v.y) && isNum(v.z);
 
-/** O ponto está estritamente dentro da caixa? */
-function inside(p, b) {
-  return p.x > b.min.x && p.x < b.max.x && p.y > b.min.y && p.y < b.max.y && p.z > b.min.z && p.z < b.max.z;
+/**
+ * O corpo do jogador nascendo neste ponto (pés em s) invade a caixa?
+ * Usa o tamanho do jogador; só encostar (até CONTACT_EPSILON) não conta.
+ */
+function inside(s, b) {
+  const r = PLAYER.RADIUS;
+  const e = PHYSICS.CONTACT_EPSILON;
+  return s.x - r < b.max.x - e && s.x + r > b.min.x + e
+    && s.y < b.max.y - e && s.y + PLAYER.HEIGHT > b.min.y + e
+    && s.z - r < b.max.z - e && s.z + r > b.min.z + e;
 }
 
 /**

@@ -4,6 +4,20 @@
 import { PLAYER, VIEW } from '../../shared/constants.js';
 import { createPlayer, stepPlayer, emptyInput } from '../../shared/physics/player.js';
 import { createStepSmoother } from '../core/stepSmoothing.js';
+import { rightOf } from '../../shared/physics/move.js';
+
+/**
+ * Inclinação alvo da câmera (rad): correndo na parede, inclina para o lado oposto a ela,
+ * proporcional a quanto a parede está de lado (de frente ou de costas não inclina).
+ * Positivo = cabeça para a esquerda (parede à direita).
+ */
+export function wallrunTiltTarget(player, yaw) {
+  if (!player.wallrun) return 0;
+  const n = player.wallrun.normal;
+  const r = rightOf(yaw);
+  const wallOnRight = -(n.x * r.x + n.z * r.z); // 1 = parede bem à direita, -1 = à esquerda
+  return VIEW.WALLRUN_TILT * wallOnRight;
+}
 
 /** Chave do localStorage para a sensibilidade escolhida. */
 export const SENS_STORAGE_KEY = 'luzNegra.sens';
@@ -73,12 +87,14 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
   let pitch = 0;
   let respawns = 0;
   let eyeHeight = PLAYER.EYE_HEIGHT; // altura do olho mostrada (suavizada ao agachar/levantar)
+  let roll = 0; // inclinação da câmera (rad), suavizada (corrida na parede)
 
   function respawn() {
     player = createPlayer(spawn);
     prev = { ...player.pos };
     smoother.reset();
     eyeHeight = PLAYER.EYE_HEIGHT;
+    roll = 0;
     yaw = spawn.yaw ?? 0;
     pitch = 0;
     respawns++;
@@ -90,6 +106,10 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     },
     get yaw() {
       return yaw;
+    },
+    /** Inclinação da câmera para desenhar (rad), atualizada em eye(). */
+    get roll() {
+      return roll;
     },
     get pitch() {
       return pitch;
@@ -126,6 +146,10 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       const target = player.crouching ? PLAYER.CROUCH_EYE_HEIGHT : PLAYER.EYE_HEIGHT;
       eyeHeight += (target - eyeHeight) * (1 - Math.exp(-VIEW.CROUCH_SMOOTH_RATE * Math.max(0, frameDt)));
       if (Math.abs(target - eyeHeight) < 1e-4) eyeHeight = target;
+      // Corrida na parede: câmera inclina suavemente para o lado oposto à parede.
+      const tilt = wallrunTiltTarget(player, yaw);
+      roll += (tilt - roll) * (1 - Math.exp(-VIEW.TILT_SMOOTH_RATE * Math.max(0, frameDt)));
+      if (Math.abs(tilt - roll) < 1e-5) roll = tilt;
       return {
         x: lerp(prev.x, player.pos.x),
         y: feetY + eyeHeight,
