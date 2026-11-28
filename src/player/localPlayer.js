@@ -5,6 +5,62 @@ import { PLAYER, VIEW } from '../../shared/constants.js';
 import { createPlayer, stepPlayer, emptyInput } from '../../shared/physics/player.js';
 import { createStepSmoother } from '../core/stepSmoothing.js';
 import { rightOf } from '../../shared/physics/move.js';
+import { CAMERA, HUD } from '../config/camera.js';
+
+/** Chave do localStorage para o campo de visão escolhido. */
+export const FOV_STORAGE_KEY = 'luzNegra.fov';
+
+/**
+ * Campo de visão base: ?fov= no endereço (e salvo), senão o salvo, senão o padrão.
+ * Aceita de CAMERA.FOV_MIN_ALLOWED a CAMERA.FOV_MAX_ALLOWED graus.
+ */
+export function resolveFov(search, storage) {
+  const valid = (v) => {
+    const n = Number(v);
+    return v !== null && v !== '' && Number.isFinite(n) && n >= CAMERA.FOV_MIN_ALLOWED && n <= CAMERA.FOV_MAX_ALLOWED ? n : null;
+  };
+  const fromUrl = valid(new URLSearchParams(search).get('fov'));
+  if (fromUrl !== null) {
+    try {
+      storage?.setItem(FOV_STORAGE_KEY, String(fromUrl));
+    } catch {
+      // sem localStorage: vale só nesta sessão
+    }
+    return fromUrl;
+  }
+  let saved = null;
+  try {
+    saved = valid(storage?.getItem(FOV_STORAGE_KEY));
+  } catch {
+    saved = null;
+  }
+  return saved ?? CAMERA.FOV_BASE;
+}
+
+/** Campo de visão alvo para uma velocidade horizontal: abre até FOV_MAX em FOV_MAX_AT_SPEED. */
+export function fovForSpeed(speed, base = CAMERA.FOV_BASE) {
+  const k = Math.max(0, Math.min(1, speed / CAMERA.FOV_MAX_AT_SPEED));
+  return base + (CAMERA.FOV_MAX - CAMERA.FOV_BASE) * k;
+}
+
+/** Faixa do velocímetro: 0 normal, 1 acima de 15 m/s, 2 acima de 25 m/s. */
+export function speedTier(speed) {
+  if (speed > HUD.SPEED_TIER_2) return 2;
+  if (speed > HUD.SPEED_TIER_1) return 1;
+  return 0;
+}
+
+/** Inclinação ao andar de lado no chão (rad): para o lado do movimento (D: direita). */
+export function strafeTiltTarget(player, moveX) {
+  if (!player.onGround || player.sliding || !moveX) return 0;
+  return -Math.sign(moveX) * CAMERA.STRAFE_TILT;
+}
+
+/** Profundidade do afundamento ao pousar de uma queda de `height` m (0 até 3 m). */
+export function landDipDepth(height) {
+  if (height <= CAMERA.LAND_DIP_MIN_HEIGHT) return 0;
+  return CAMERA.LAND_DIP_DEPTH * Math.min(1, height / CAMERA.LAND_DIP_FULL_HEIGHT);
+}
 
 /** Intensidade da tremida do slam (m): proporcional à altura da queda, até VIEW.SLAM_SHAKE em 10 m. */
 export function slamShakeAmplitude(height) {
@@ -95,7 +151,7 @@ export function buildInput(keys, yaw, pitch) {
  * Cria o jogador local.
  * @param {{ map: object, spawnIndex?: number, sensitivity?: number }} opts
  */
-export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY }) {
+export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY, fovBase = CAMERA.FOV_BASE }) {
   const spawn = map.spawns[spawnIndex] ?? map.spawns[0];
   const smoother = createStepSmoother();
   let player = createPlayer(spawn);
@@ -106,6 +162,10 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
   let eyeHeight = PLAYER.EYE_HEIGHT; // altura do olho mostrada (suavizada ao agachar/levantar)
   let roll = 0; // inclinação da câmera (rad), suavizada (corrida na parede)
   let shake = { time: 0, amp: 0, clock: 0 }; // tremida curta ao bater o slam (F1-14)
+  let fov = fovBase; // campo de visão mostrado (suavizado), abre com a velocidade (F1-18)
+  let moveX = 0; // tecla de lado do último passo (para a inclinação ao andar de lado)
+  let airPeak = null; // ponto mais alto desde que saiu do chão (para o afundamento ao pousar)
+  let dip = { time: 0, depth: 0 }; // afundamento da câmera ao pousar de alto
 
   function respawn() {
     player = createPlayer(spawn);
@@ -114,6 +174,9 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     eyeHeight = PLAYER.EYE_HEIGHT;
     roll = 0;
     shake = { time: 0, amp: 0, clock: 0 };
+    fov = fovBase;
+    airPeak = null;
+    dip = { time: 0, depth: 0 };
     yaw = spawn.yaw ?? 0;
     pitch = 0;
     respawns++;
@@ -125,6 +188,20 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     },
     get yaw() {
       return yaw;
+    },
+    /** Campo de visão para desenhar (graus), atualizado em eye(). */
+    get fov() {
+      return fov;
+    },
+    /** Velocidade horizontal atual (m/s), para o velocímetro. */
+    get speed() {
+      return Math.hypot(player.vel.x, player.vel.z);
+    },
+    /** Afundamento atual da câmera ao pousar (m, positivo = para baixo). */
+    get landDip() {
+      if (dip.time <= 0) return 0;
+      const k = dip.time / CAMERA.LAND_DIP_TIME; // 1 no pouso, 0 no fim
+      return dip.depth * Math.sin(Math.PI * (1 - k)); // desce e volta, suave
     },
     /** Inclinação da câmera para desenhar (rad), atualizada em eye(). */
     get roll() {
@@ -149,8 +226,18 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       const input = buildInput(keys, yaw, pitch);
       player.yaw = yaw;
       player.pitch = pitch;
+      moveX = input.moveX;
       prev = { ...player.pos };
+      const wasOnGround = player.onGround;
       stepPlayer(player, input, map, dt);
+      // Afundamento ao pousar de alto (> 3 m): mede a queda desde o ponto mais alto no ar.
+      if (!player.onGround) airPeak = Math.max(airPeak ?? player.pos.y, player.pos.y);
+      if (player.onGround && !wasOnGround && airPeak !== null) {
+        const depth = landDipDepth(airPeak - player.pos.y);
+        if (depth > 0) dip = { time: CAMERA.LAND_DIP_TIME, depth };
+        airPeak = null;
+      }
+      if (player.onGround) airPeak = null;
       const land = player.events.find((e) => e.type === 'slamLand');
       if (land) shake = { time: VIEW.SLAM_SHAKE_TIME, amp: slamShakeAmplitude(land.height), clock: 0 };
       if (player.pos.y < -PLAYER.RESPAWN_FALL_DEPTH) respawn();
@@ -175,13 +262,19 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       const target = player.crouching ? PLAYER.CROUCH_EYE_HEIGHT : PLAYER.EYE_HEIGHT;
       eyeHeight += (target - eyeHeight) * (1 - Math.exp(-VIEW.CROUCH_SMOOTH_RATE * Math.max(0, frameDt)));
       if (Math.abs(target - eyeHeight) < 1e-4) eyeHeight = target;
-      // Corrida na parede: câmera inclina suavemente para o lado oposto à parede.
-      const tilt = wallrunTiltTarget(player, yaw);
+      // Inclinação: corrida na parede (lado oposto à parede) ou andar de lado no chão (±1,5°).
+      const wallTilt = wallrunTiltTarget(player, yaw);
+      const tilt = wallTilt !== 0 ? wallTilt : strafeTiltTarget(player, moveX);
+      // Campo de visão abre com a velocidade (F1-18).
+      const fovTarget = fovForSpeed(Math.hypot(player.vel.x, player.vel.z), fovBase);
+      fov += (fovTarget - fov) * (1 - Math.exp(-CAMERA.FOV_SMOOTH_RATE * Math.max(0, frameDt)));
+      if (Math.abs(fovTarget - fov) < 1e-3) fov = fovTarget;
+      dip.time = Math.max(0, dip.time - Math.max(0, frameDt));
       roll += (tilt - roll) * (1 - Math.exp(-VIEW.TILT_SMOOTH_RATE * Math.max(0, frameDt)));
       if (Math.abs(tilt - roll) < 1e-5) roll = tilt;
       return {
         x: lerp(prev.x, player.pos.x) + offset.x,
-        y: feetY + eyeHeight + offset.y,
+        y: feetY + eyeHeight + offset.y - this.landDip,
         z: lerp(prev.z, player.pos.z) + offset.z,
       };
     },

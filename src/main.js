@@ -6,8 +6,9 @@ import { createDebugPanel } from './ui/debug.js';
 import { getMap } from '../shared/maps/index.js';
 import { validateMap } from '../shared/maps/format.js';
 import { createMapMeshes } from './world/mapRenderer.js';
-import { createLocalPlayer, resolveSensitivity } from './player/localPlayer.js';
+import { createLocalPlayer, resolveSensitivity, resolveFov } from './player/localPlayer.js';
 import { createStartScreen } from './ui/startScreen.js';
+import { createHud } from './ui/hud.js';
 
 const canvas = document.getElementById('game');
 
@@ -68,12 +69,15 @@ try {
   storage = null;
 }
 const sensitivity = resolveSensitivity(window.location.search, storage);
+// Campo de visão base: ?fov=100 no endereço muda e fica salvo (F1-18).
+const fovBase = resolveFov(window.location.search, storage);
 
 // Jogador local no primeiro ponto de nascimento do mapa.
-const me = createLocalPlayer({ map, sensitivity });
+const me = createLocalPlayer({ map, sensitivity, fovBase });
 // Em desenvolvimento, o jogador local fica acessível no console (depuração e testes visuais).
 if (import.meta.env.DEV) window.__me = me;
 createStartScreen({ canvas });
+const hud = createHud();
 const deg = (rad) => Math.round((rad * 180) / Math.PI);
 let lastFrame = performance.now();
 
@@ -115,6 +119,12 @@ const loop = createLoop({
     const eye = me.eye(alpha, frameDt);
     camera.position.set(eye.x, eye.y, eye.z);
     camera.rotation.set(me.pitch, me.yaw, me.roll);
+    // Campo de visão abre com a velocidade (F1-18).
+    if (Math.abs(camera.fov - me.fov) > 1e-3) {
+      camera.fov = me.fov;
+      camera.updateProjectionMatrix();
+    }
+    hud.update(me.speed);
     renderer.render(scene, camera);
     const p = me.player;
     debug.set('posição', p.pos);
@@ -131,6 +141,7 @@ const loop = createLoop({
     debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado', wallrun: 'correndo na parede', slam: 'golpe no chão', dash: 'dash', rail: 'no corrimão' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
     debug.set('sensibilidade', me.sensitivity.toFixed(4));
+    debug.set('campo de visão (graus)', me.fov.toFixed(1));
     debug.set('renasceu', me.respawns);
     debug.set('chamadas de desenho', renderer.info.render.calls);
     debug.set('triângulos', renderer.info.render.triangles);
