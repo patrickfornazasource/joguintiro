@@ -38,8 +38,9 @@ function placeOnRail(p) {
 
 /**
  * Regras do corrimão num passo.
- * @returns {'riding'|'jumped'|null} 'riding' no trilho (a posição já foi tratada; não rodar a
- *   física normal), 'jumped' pulou para fora neste passo, null fora do trilho
+ * @returns {'riding'|'jumped'|'released'|null} 'riding' no trilho (a posição já foi tratada; não
+ *   rodar a física normal), 'jumped' pulou para fora neste passo, 'released' soltou agachando
+ *   neste passo, null fora do trilho
  */
 export function updateRail(p, input, map, dt) {
   if (p.railLast) p.railLast.age += dt;
@@ -56,7 +57,7 @@ export function updateRail(p, input, map, dt) {
     }
     if (input.crouchPressed) {
       endRail(p, 'crouch'); // agachar de novo solta do trilho (cai com a velocidade que tinha)
-      return null;
+      return 'released'; // o aperto de agachar já foi usado: não vira golpe no chão neste passo
     }
     // Gravidade projetada: acelera descendo, freia subindo (v com sinal: + em direção a `to`).
     r.v -= MOVE.RAIL_GRAVITY_ACCEL * r.t.y * dt;

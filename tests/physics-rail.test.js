@@ -178,3 +178,35 @@ test('Sandbox: a partir do corrimão e do patamar, nada sai do mapa', () => {
   const r = searchEscapes(sandbox, starts, 29);
   assert.deepEqual(r.escapes, [], `saiu em ${r.escapes.length} de ${r.tries}`);
 });
+
+// Ajustes da revisão do PR #28.
+
+test('agachar no trilho solta mantendo a velocidade, sem slam', () => {
+  const p = dropOnRail({ x: 0, y: 0, z: -6 });
+  for (let i = 0; i < 20; i++) stepPlayer(p, emptyInput(), map, DT);
+  const along = Math.hypot(p.vel.x, p.vel.z);
+  assert.ok(along > 5, `andando no trilho: ${along}`);
+  stepPlayer(p, input({ crouch: true, crouchPressed: true }), map, DT);
+  assert.equal(reasonOf(p), 'crouch');
+  assert.equal(has(p, 'slamStart'), false, 'sem golpe no chão');
+  assert.equal(p.slam, null);
+  assert.ok(Math.abs(Math.hypot(p.vel.x, p.vel.z) - along) < 0.05, `mantém a velocidade: ${Math.hypot(p.vel.x, p.vel.z)}`);
+  // Segurando C depois de soltar, também não vira slam (só um aperto novo faria).
+  for (let i = 0; i < 20; i++) stepPlayer(p, input({ crouch: true }), map, DT);
+  assert.equal(p.slam, null);
+  assert.ok(Math.hypot(p.vel.x, p.vel.z) > along - 0.05, 'segue para a frente caindo');
+});
+
+test('por baixo do trilho no ar, não gruda', () => {
+  // Trilho horizontal a 3 m; pés 0,4 m abaixo dele (dentro da distância de grudar), indo ao longo dele.
+  const flat = rail({ x: 0, y: 3, z: 5 }, { x: 0, y: 3, z: -5 });
+  const m = { id: 't', name: 't', boxes: [floor, flat], spawns: [] };
+  const p = createPlayer({ x: 0, y: 2.6, z: 4 });
+  p.vel = { x: 0, y: 1, z: -8 };
+  let stuck = false;
+  for (let i = 0; i < 30; i++) {
+    stepPlayer(p, emptyInput(), m, DT);
+    if (p.rail) stuck = true;
+  }
+  assert.equal(stuck, false);
+});

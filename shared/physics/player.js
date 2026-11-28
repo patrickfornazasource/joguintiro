@@ -139,7 +139,7 @@ export function stepPlayer(p, input, map, dt) {
   // Corrida na parede (F1-12): entrar, continuar, sair ou pular para fora. Tem prioridade.
   // Corrimão (F1-17): no trilho, a posição é dele (sem a física normal neste passo).
   rechargeDash(p, dt);
-  const railing = updateRail(p, input, map, dt); // 'riding' | 'jumped' | null
+  const railing = updateRail(p, input, map, dt); // 'riding' | 'jumped' | 'released' | null
   if (railing === 'riding') {
     p.state = 'rail';
     return p;
@@ -167,7 +167,8 @@ export function stepPlayer(p, input, map, dt) {
 
   // Golpe no chão (F1-14): agachar no ar (fora da corrida na parede) despenca em linha reta.
   p.slamJumpWindow = Math.max(0, p.slamJumpWindow - dt);
-  if (!dashing && !onWall && !jumping && !p.onGround && !p.slam && input.crouchPressed) {
+  // Soltar do corrimão agachando usa o aperto: não inicia o slam no mesmo passo (F1-17).
+  if (railing !== 'released' && !dashing && !onWall && !jumping && !p.onGround && !p.slam && input.crouchPressed) {
     p.slam = { startY: p.pos.y };
     p.events.push({ type: 'slamStart' });
   }
