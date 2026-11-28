@@ -3,7 +3,7 @@
 // (de TUNING.MIN_FACTOR x a TUNING.MAX_FACTOR x o padrão) e limpa valores vindos de fora
 // (painel, valores salvos no navegador): fora da faixa é cortado, inválido volta ao padrão.
 // O painel em si (lil-gui) fica em src/ui/tuning.js.
-import { MOVE, CHARGE, TUNING } from './constants.js';
+import { MOVE, CHARGE, WEAPONS, TUNING } from './constants.js';
 
 /** Tipos de valor: número livre, inteiro (contagens) ou fração de 0 a 1. */
 const NUM = 'número';
@@ -136,12 +136,32 @@ export const CHARGE_TUNING_GROUPS = Object.freeze([
 ]);
 
 /**
+ * Grupo das armas (F2-02: Rifle). `RECOIL_VERTICAL_SCALE` fica fora (fixo em 0 até a decisão do
+ * dono sobre o limite vertical de impulsos de arma). Toda outra chave de WEAPONS aparece aqui.
+ */
+export const WEAPON_TUNING_GROUPS = Object.freeze([
+  {
+    name: 'Rifle',
+    items: [
+      ['RIFLE_COST', 'Rifle: custo por tiro', 'pontos de Carga', NUM],
+      ['RIFLE_DAMAGE', 'Rifle: dano parado ou andando', 'pontos de vida', NUM],
+      ['RIFLE_SPEED_MULT_MAX', 'Rifle: dano máximo pela velocidade', 'vezes', NUM],
+      ['DAMAGE_SPEED_FULL', 'Velocidade do dano máximo (todas as armas)', 'm/s', NUM],
+      ['RIFLE_FIRE_INTERVAL', 'Rifle: tempo entre tiros', 's', NUM],
+      ['RIFLE_RANGE', 'Rifle: alcance', 'm', NUM],
+      ['RIFLE_RECOIL', 'Rifle: coice (empurrão para trás)', 'm/s', NUM],
+    ],
+  },
+]);
+
+/**
  * Conjuntos de números do painel: cada um com o objeto padrão (congelado) e os grupos.
  * Chaves são únicas entre os conjuntos (assim os valores salvos podem ficar juntos).
  */
 export const TUNING_SETS = Object.freeze([
   { id: 'MOVE', base: MOVE, groups: TUNING_GROUPS },
   { id: 'CHARGE', base: CHARGE, groups: CHARGE_TUNING_GROUPS },
+  { id: 'WEAPONS', base: WEAPONS, groups: WEAPON_TUNING_GROUPS },
 ]);
 
 /** Item da lista por chave: { key, label, unit, kind, group }. */

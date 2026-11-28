@@ -1,8 +1,9 @@
 // Jogador local: junta a entrada de cada passo, roda a física compartilhada e guarda
 // a posição anterior e a atual para a câmera interpolar entre passos.
 // Sem Three.js e sem DOM: testável no Node (a câmera é atualizada em main.js).
-import { PLAYER, VIEW, MOVE, CHARGE } from '../../shared/constants.js';
+import { PLAYER, VIEW, MOVE, CHARGE, WEAPONS } from '../../shared/constants.js';
 import { createCharge, updateCharge, refillCharge } from '../../shared/combat/charge.js';
+import { createWeapon, stepWeapon, fireWeapon, aimDir } from '../../shared/combat/weapons.js';
 import { createPlayer, stepPlayer, emptyInput } from '../../shared/physics/player.js';
 import { createStepSmoother } from '../core/stepSmoothing.js';
 import { rightOf } from '../../shared/physics/move.js';
@@ -170,8 +171,9 @@ export function mapArea(map) {
  *   move: números do movimento (padrão MOVE). O painel de ajuste (F1-20) passa uma cópia
  *   editável; mudar um valor nela vale no passo seguinte.
  *   chargeCfg: números da Carga (padrão CHARGE; o painel F4 passa uma cópia editável, F2-01).
+ *   weaponsCfg: números das armas (padrão WEAPONS, F2-02). targets: alvos que o tiro pode acertar.
  */
-export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY, fovBase = CAMERA.FOV_BASE, move = MOVE, chargeCfg = CHARGE }) {
+export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY, fovBase = CAMERA.FOV_BASE, move = MOVE, chargeCfg = CHARGE, weaponsCfg = WEAPONS, targets = [] }) {
   let spawn = map.spawns[spawnIndex] ?? map.spawns[0];
   let lastGround = { x: spawn.x, z: spawn.z }; // último lugar onde pisou no chão
   const smoother = createStepSmoother(move);
@@ -179,6 +181,8 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
   let outOfMap = 0; // vezes que saiu do mapa e voltou (rede de segurança)
   let player = createPlayer(spawn, move);
   const charge = createCharge(chargeCfg); // Carga Cinética (F2-01): começa cheia
+  const weapon = createWeapon('rifle'); // Rifle Cinético (F2-02)
+  let lastShot = null; // resultado do último tiro (painel F3)
   let prev = { ...player.pos };
   let yaw = spawn.yaw ?? 0;
   let pitch = 0;
@@ -268,6 +272,19 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     charge,
     /** Números da Carga em uso (CHARGE, ou a cópia do painel de ajuste). */
     chargeCfg,
+    /** Arma atual (F2-02): { id, cooldown }. */
+    weapon,
+    /** Números das armas em uso (WEAPONS, ou a cópia do painel de ajuste). */
+    weaponsCfg,
+    /** Resultado do último tiro (dano, acerto), ou null. */
+    get lastShot() {
+      return lastShot;
+    },
+    /** Origem e direção da mira agora: o olho do jogador e para onde ele olha. */
+    aim() {
+      const eye = player.crouching ? PLAYER.CROUCH_EYE_HEIGHT : PLAYER.EYE_HEIGHT;
+      return { origin: { x: player.pos.x, y: player.pos.y + eye, z: player.pos.z }, dir: aimDir(yaw, pitch) };
+    },
     /** Volta ao ponto de nascimento (estação) mais perto de onde está agora (tecla R). */
     respawnNearest() {
       respawn(nearestSpawn(player.pos.x, player.pos.z));
@@ -290,6 +307,14 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       const wasOnGround = player.onGround;
       stepPlayer(player, input, map, dt, move);
       updateCharge(charge, player, dt, chargeCfg, move); // depois da física: lê velocidade e eventos
+      // Tiro (F2-02): segurar o botão atira na cadência da arma. Sem Carga, só o aperto avisa
+      // (evento dryFire), para não repetir o aviso a cada passo.
+      stepWeapon(weapon, dt);
+      const wantsFire = keys.isDown('fire');
+      if (wantsFire && weapon.cooldown <= 1e-9 && (keys.pressed('fire') || charge.value + 1e-9 >= weaponsCfg.RIFLE_COST)) {
+        const shot = fireWeapon({ player, charge, weapon }, this.aim(), { map, targets }, weaponsCfg, move);
+        if (shot.fired) lastShot = shot;
+      }
       // Afundamento ao pousar de alto (> 3 m): mede a queda desde o ponto mais alto no ar.
       if (!player.onGround) airPeak = Math.max(airPeak ?? player.pos.y, player.pos.y);
       if (player.onGround && !wasOnGround && airPeak !== null) {

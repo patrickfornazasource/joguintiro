@@ -70,7 +70,7 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 
 - [x] **[F2-01](tarefas/F2-01.md)** Sistema de Carga. Enche com velocidade e eventos (pulo na parede, deslize). Regras do GDD, seção 3.
   Pronto quando: testes cobrem ganho parado, ganho em alta velocidade e bônus.
-- [ ] **[F2-02](tarefas/F2-02.md)** Rifle Cinético. Tiro instantâneo (raycast), custo de Carga, dano escala com velocidade, coice.
+- [x] **[F2-02](tarefas/F2-02.md)** Rifle Cinético. Tiro instantâneo (raycast), custo de Carga, dano escala com velocidade, coice.
 - [ ] **[F2-03](tarefas/F2-03.md)** Descarga (disparo alternativo). Gasta toda a Carga, impulso proporcional, dano em cone.
 - [ ] **[F2-04](tarefas/F2-04.md)** HUD de combate. Barra de Carga dividida em "tiros disponíveis", vida, "dano do próximo tiro", marcador de acerto.
 - [ ] **[F2-05](tarefas/F2-05.md)** Alvos treináveis (bots offline). Bonecos que andam e pulam para treinar sozinho.

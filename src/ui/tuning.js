@@ -5,8 +5,8 @@
 // Botões: Restaurar padrão, Copiar valores (JSON) e Salvar neste navegador.
 // As regras (faixas, limpeza de valores, JSON) ficam em shared/tuning.js, sem DOM.
 import GUI from 'lil-gui';
-import { MOVE, CHARGE } from '../../shared/constants.js';
-import { TUNING_GROUPS, CHARGE_TUNING_GROUPS, tuningItem, tuningRange, sanitizeMove, changedValues, tuningJsonAll } from '../../shared/tuning.js';
+import { MOVE, CHARGE, WEAPONS } from '../../shared/constants.js';
+import { TUNING_GROUPS, CHARGE_TUNING_GROUPS, WEAPON_TUNING_GROUPS, tuningItem, tuningRange, sanitizeMove, changedValues, tuningJsonAll } from '../../shared/tuning.js';
 
 /** Chave do localStorage com os valores salvos (só os diferentes do padrão). */
 export const TUNING_STORAGE_KEY = 'luzNegra.ajuste.move';
@@ -19,8 +19,8 @@ export function isTuningEnabled(search) {
 /**
  * Números para o modo ajuste: o padrão com os valores salvos neste navegador por cima.
  * Valor salvo inválido ou fora da faixa é corrigido (sanitizeMove).
- * @returns {{ cfg: Record<string, number>, charge: Record<string, number>, loaded: number }}
- *   cfg = movimento, charge = Carga (F2-01); loaded = quantos valores salvos valeram
+ * @returns {{ cfg: Record<string, number>, charge: Record<string, number>, weapons: Record<string, number>, loaded: number }}
+ *   cfg = movimento, charge = Carga (F2-01), weapons = armas (F2-02); loaded = quantos valores salvos valeram
  */
 export function loadTuning(storage) {
   let saved = null;
@@ -32,16 +32,23 @@ export function loadTuning(storage) {
   }
   const cfg = sanitizeMove(saved);
   const charge = sanitizeMove(saved, CHARGE);
-  return { cfg, charge, loaded: Object.keys(changedValues(cfg)).length + Object.keys(changedValues(charge, CHARGE)).length };
+  const weapons = sanitizeMove(saved, WEAPONS);
+  const loaded = Object.keys(changedValues(cfg)).length + Object.keys(changedValues(charge, CHARGE)).length
+    + Object.keys(changedValues(weapons, WEAPONS)).length;
+  return { cfg, charge, weapons, loaded };
 }
 
 /**
  * Guarda neste navegador só os valores diferentes do padrão (movimento e Carga juntos: as chaves
  * não se repetem). Devolve true se deu certo.
  */
-export function saveTuning(storage, cfg, charge = null) {
+export function saveTuning(storage, cfg, charge = null, weapons = null) {
   try {
-    const changed = { ...changedValues(cfg), ...(charge ? changedValues(charge, CHARGE) : {}) };
+    const changed = {
+      ...changedValues(cfg),
+      ...(charge ? changedValues(charge, CHARGE) : {}),
+      ...(weapons ? changedValues(weapons, WEAPONS) : {}),
+    };
     storage.setItem(TUNING_STORAGE_KEY, JSON.stringify(changed));
     return true;
   } catch {
@@ -76,13 +83,14 @@ async function copyText(text, doc) {
 /**
  * Cria o painel (começa fechado; F4 abre).
  * @param {{ cfg: Record<string, number>, charge?: Record<string, number>|null, storage?: Storage|null, loaded?: number, doc?: Document }} opts
- *   cfg = números do movimento; charge = números da Carga (F2-01), opcional
+ *   cfg = números do movimento; charge = números da Carga (F2-01); weapons = das armas (F2-02)
  */
-export function createTuningPanel({ cfg, charge = null, storage = null, loaded = 0, doc = document }) {
-  const gui = new GUI({ title: 'Ajuste do movimento e da Carga (F4)', width: 520 });
+export function createTuningPanel({ cfg, charge = null, weapons = null, storage = null, loaded = 0, doc = document }) {
+  const gui = new GUI({ title: 'Ajuste do movimento, da Carga e das armas (F4)', width: 520 });
   // Conjuntos de números: cada controle sabe de qual objeto (cfg) e qual é o padrão (base).
   const sets = [{ cfg, base: MOVE, groups: TUNING_GROUPS }];
   if (charge) sets.push({ cfg: charge, base: CHARGE, groups: CHARGE_TUNING_GROUPS });
+  if (weapons) sets.push({ cfg: weapons, base: WEAPONS, groups: WEAPON_TUNING_GROUPS });
   gui.domElement.id = 'painel-ajuste';
   Object.assign(gui.domElement.style, { maxHeight: '96vh', overflowY: 'auto', zIndex: '20' });
   gui.domElement.style.setProperty('--name-width', '58%');
@@ -131,7 +139,7 @@ export function createTuningPanel({ cfg, charge = null, storage = null, loaded =
         : 'Não deu para copiar sozinho. Tente de novo depois de clicar no painel.');
     },
     save() {
-      const ok = storage && saveTuning(storage, cfg, charge);
+      const ok = storage && saveTuning(storage, cfg, charge, weapons);
       say(ok
         ? 'Salvo neste navegador: os valores voltam quando abrir o jogo de novo com ?ajuste=1.'
         : 'Este navegador não deixou salvar.');
@@ -143,7 +151,7 @@ export function createTuningPanel({ cfg, charge = null, storage = null, loaded =
 
   for (const set of sets) for (const group of set.groups) {
     const folder = gui.addFolder(group.name);
-    if (!['Chão', 'Pulo', 'Carga'].includes(group.name)) folder.close();
+    if (!['Chão', 'Pulo', 'Carga', 'Rifle'].includes(group.name)) folder.close();
     for (const [key] of group.items) {
       const item = tuningItem(key);
       const base = set.base;

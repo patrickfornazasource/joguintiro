@@ -12,6 +12,7 @@ const CONTROLS = [
   ['Pular de lado numa parede', 'correr na parede (Espaço sai dela)'],
   ['Espaço encostado numa parede no ar', 'pulo na parede (até 3 seguidos)'],
   ['Mouse', 'olhar'],
+  ['Clique esquerdo', 'atirar (gasta Carga; mais rápido = mais dano)'],
   ['R', 'voltar à estação mais perto'],
   ['F3', 'painel de informações'],
   ['Esc', 'soltar o mouse'],
