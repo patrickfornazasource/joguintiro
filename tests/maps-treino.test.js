@@ -289,35 +289,48 @@ test('nada sai do mapa a partir das estações (varredura: pulo, duplo, dash, pu
   assert.deepEqual(r.escapes, [], `saiu em ${r.escapes.length} de ${r.tries}`);
 });
 
-test('estação 6, como a placa ensina: de qualquer ponto do X, Espaço e, no alto, Espaço + D alcançam a plataforma', () => {
-  // Achado do Testador: com o segundo Espaço logo em seguida, não chega. A placa e o roteiro agora
-  // dizem "no alto". Este teste trava que, assim, todo o X funciona (sem dash).
-  const run = (x, early) => {
+test('estação 6, como a placa ensina: "Bateu: Espaço já segurando D. No alto: Espaço de novo" (24 saídas)', () => {
+  // Achados do Testador e do Revisor: o segundo Espaço logo em seguida não chega, e pular do slam
+  // sem D quase nunca chega. A placa e o roteiro agora dizem: Espaço ao bater JÁ segurando D e,
+  // no alto, Espaço de novo. Quem esqueceu o D: D + Shift na descida.
+  // 24 saídas: 8 posições na torre x 3 pontos do X (onde aperta C).
+  const run = (x, zSlam, { holdD = true, early = false, shift = false } = {}) => {
     const p = createPlayer({ x, y: S.perch.top, z: -31.5, yaw: 0 });
     stepPlayer(p, input({ yaw: 0 }), M, DT);
     let slammed = false;
     let landed = false;
     let doubled = false;
+    let dashed = false;
     let since = 0;
     for (let i = 0; i < 6 / DT; i++) {
       let inp;
       if (!slammed) {
-        slammed = !p.onGround && p.pos.z < -36.2;
+        slammed = !p.onGround && p.pos.z < zSlam;
         inp = slammed ? input({ yaw: 0, crouch: true, crouchPressed: true }) : input({ yaw: 0, moveZ: 1 });
       } else if (!landed) {
         landed = has(p, 'slamLand');
-        inp = landed ? input({ yaw: 0, moveX: 1, jump: true, jumpPressed: true }) : input({ yaw: 0, crouch: true });
+        inp = landed ? input({ yaw: 0, moveX: holdD ? 1 : 0, jump: true, jumpPressed: true }) : input({ yaw: 0, crouch: true });
       } else {
         since += DT;
         const now = !doubled && !p.onGround && (early ? since >= 0.15 : p.vel.y < 0.5);
         if (now) doubled = true;
-        inp = input({ yaw: 0, moveX: 1, jump: now, jumpPressed: now });
+        // "D + Shift na descida": já descendo, abaixo da altura da plataforma, ainda antes dela.
+        const dash = shift && doubled && !dashed && p.vel.y < 0 && p.pos.y < S.target.top + 0.4 && p.pos.x < 73.7;
+        if (dash) dashed = true;
+        inp = input({ yaw: 0, moveX: holdD || doubled ? 1 : 0, jump: now, jumpPressed: now, dashPressed: dash });
       }
       stepPlayer(p, inp, M, DT);
       if (landed && doubled && p.onGround) return p.pos.y > S.target.top - 0.1;
     }
     return false;
   };
-  for (let x = 70.4; x <= 73.6 + 1e-9; x += 0.4) assert.ok(run(x, false), `x = ${x.toFixed(1)}: no alto, chega`);
-  assert.equal(run(72, true), false, 'com o segundo Espaço rápido demais (0,15 s), não chega');
+  const xs = [70.4, 70.85, 71.3, 71.75, 72.2, 72.65, 73.1, 73.55];
+  const zs = [-35, -36.5, -38];
+  const count = (opts) => xs.reduce((n, x) => n + zs.filter((z) => run(x, z, opts)).length, 0);
+  assert.equal(count(), 24, 'seguindo a placa (D desde o pulo de slam, Espaço no alto): 24 de 24');
+  const noD = count({ holdD: false });
+  const noDShift = count({ holdD: false, shift: true });
+  assert.ok(noD <= 8, `sem D no pulo de slam quase não chega: ${noD} de 24`);
+  assert.ok(noDShift >= 18, `esqueceu o D, mas fez D + Shift na descida: ${noDShift} de 24`);
+  assert.equal(run(72, -36.5, { early: true }), false, 'com o segundo Espaço rápido demais (0,15 s), não chega');
 });

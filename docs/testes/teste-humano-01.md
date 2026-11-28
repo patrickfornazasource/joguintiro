@@ -23,12 +23,12 @@ Leva uns 10 minutos. Você joga o mapa de treino e responde 9 perguntas.
 
 Cada estação tem uma placa. Faça na ordem, de 1 a 10.
 
-1. **Bunny hop:** segure W e Espaço.
+1. **Bunny hop:** segure W e Espaço. (Pulando parado ou devagar, o personagem vira de uma vez para o lado das teclas; diga se essa curva brusca incomoda.)
 2. **Air strafe:** pule o buraco curvando para a direita (D e mouse).
 3. **Deslize:** corra e aperte C antes do túnel baixo.
 4. **Corrida na parede:** pule de lado numa parede. **Novidade:** vale em qualquer parede, cinza ou ciano.
 5. **Pulo na parede:** suba o poço pulando de uma parede para a outra.
-6. **Slam:** do alto da torre, C no X amarelo. Ao bater, Espaço. No alto do pulo, Espaço de novo segurando D (direita). Se o segundo Espaço vier rápido demais, não chega; outra saída: Shift para a direita já descendo.
+6. **Slam:** do alto da torre, C no X amarelo. Bateu: Espaço **já segurando D** (direita). No alto do pulo: Espaço de novo. Esqueceu o D? Aperte D + Shift na descida.
 7. **Dash:** pulo, pulo duplo e Shift para cruzar o vão.
 8. **Plataformas:** pise na verde e deixe ela lançar você.
 9. **Corrimão:** suba a escada com W e, no alto, puxe D. **Novidade:** o corrimão não freia mais. Entre rápido e veja.
