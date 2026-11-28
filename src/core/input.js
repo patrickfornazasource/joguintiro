@@ -159,6 +159,9 @@ export function attachInput({ canvas, target = window, doc = document, bindings 
   const isLocked = () => doc.pointerLockElement === canvas;
 
   let lastKey = null;
+  // Diagnóstico do mouse (painel F3): movimentos recebidos com o mouse travado e sem trava,
+  // e o último movimento. Ajuda a ver se o navegador parou de mandar o mouse.
+  const mouse = { locked: 0, unlocked: 0, last: { x: 0, y: 0 } };
   const syncModifiers = (e) => {
     for (const [flag, codes] of MODIFIER_FLAGS) {
       if (e[flag] === false) codes.forEach((c) => state.release(c));
@@ -198,7 +201,13 @@ export function attachInput({ canvas, target = window, doc = document, bindings 
   const onMouseUp = (e) => state.release(`Mouse${e.button}`);
   const onMouseMove = (e) => {
     syncModifiers(e);
-    if (isLocked()) state.addMouseDelta(e.movementX, e.movementY);
+    if (isLocked()) {
+      state.addMouseDelta(e.movementX, e.movementY);
+      mouse.locked++;
+      mouse.last = { x: e.movementX, y: e.movementY };
+    } else {
+      mouse.unlocked++;
+    }
   };
   const onContextMenu = (e) => e.preventDefault();
   const onBlur = () => state.releaseAll();
@@ -228,6 +237,13 @@ export function attachInput({ canvas, target = window, doc = document, bindings 
     consumeMouseDelta: state.consumeMouseDelta,
     endStep: state.endStep,
     isLocked,
+    /**
+     * Contagem de movimentos do mouse desde o início: { locked, unlocked, last: { x, y } }
+     * (locked = com o mouse travado no jogo, os únicos que giram a câmera).
+     */
+    get mouseStats() {
+      return { locked: mouse.locked, unlocked: mouse.unlocked, last: { ...mouse.last } };
+    },
     /** Última tecla recebida ({ code, key }), para o painel de depuração. */
     get lastKey() {
       return lastKey;
