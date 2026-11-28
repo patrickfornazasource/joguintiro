@@ -166,6 +166,14 @@ export const MOVE = Object.freeze({
   RAIL_REATTACH_DELAY: 0.3,
 });
 
+/** Painel de ajuste ao vivo (F4, F1-20): só com ?ajuste=1 no endereço. */
+export const TUNING = Object.freeze({
+  /** Menor valor de cada controle, em vezes o valor padrão (0,25 = um quarto do padrão). */
+  MIN_FACTOR: 0.25,
+  /** Maior valor de cada controle, em vezes o valor padrão (3 = o triplo do padrão). */
+  MAX_FACTOR: 3,
+});
+
 /** Câmera e mouse. */
 export const VIEW = Object.freeze({
   /** Sensibilidade padrão do mouse (rad por pixel). Ajustável por ?sens= no endereço. */

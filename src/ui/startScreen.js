@@ -19,9 +19,10 @@ const CONTROLS = [
 
 /**
  * Cria a tela inicial sobre o jogo.
- * @param {{ canvas: HTMLCanvasElement, doc?: Document }} opts
+ * @param {{ canvas: HTMLCanvasElement, doc?: Document, extra?: Array<[string, string]> }} opts
+ *   extra: teclas a mais na lista (ex.: F4 no modo ajuste)
  */
-export function createStartScreen({ canvas, doc = document }) {
+export function createStartScreen({ canvas, doc = document, extra = [] }) {
   const el = doc.createElement('div');
   el.id = 'start-screen';
   Object.assign(el.style, {
@@ -61,7 +62,7 @@ export function createStartScreen({ canvas, doc = document }) {
     textAlign: 'left',
     opacity: '0.9',
   });
-  for (const [k, v] of CONTROLS) {
+  for (const [k, v] of [...CONTROLS, ...extra]) {
     const row = doc.createElement('div');
     const key = doc.createElement('b');
     key.textContent = `${k}: `;

@@ -11,6 +11,7 @@ import { createStartScreen } from './ui/startScreen.js';
 import { createHud } from './ui/hud.js';
 import { createSigns, createFloorMarks } from './world/signs.js';
 import { createCircuitTimer, createTimerDisplay } from './ui/timer.js';
+import { isTuningEnabled, loadTuning, createTuningPanel } from './ui/tuning.js';
 
 const canvas = document.getElementById('game');
 
@@ -80,10 +81,24 @@ const fovBase = resolveFov(window.location.search, storage);
 // ?spawn=N começa na estação N (1 = primeiro ponto de nascimento do mapa).
 const spawnParam = Number(new URLSearchParams(window.location.search).get('spawn'));
 const spawnIndex = Number.isInteger(spawnParam) && spawnParam >= 1 && spawnParam <= map.spawns.length ? spawnParam - 1 : 0;
-const me = createLocalPlayer({ map, sensitivity, fovBase, spawnIndex });
+// Painel de ajuste ao vivo (F1-20): só com ?ajuste=1. Os números do movimento viram uma cópia
+// editável (com os valores salvos neste navegador); sem ?ajuste=1, vale sempre o padrão.
+const tuningOn = isTuningEnabled(window.location.search);
+const tuning = tuningOn ? loadTuning(storage) : null;
+const me = createLocalPlayer({ map, sensitivity, fovBase, spawnIndex, move: tuning ? tuning.cfg : MOVE });
+const tuningPanel = tuning ? createTuningPanel({ cfg: tuning.cfg, storage, loaded: tuning.loaded }) : null;
+if (tuningPanel) {
+  // Na fase de captura: os controles do painel (lil-gui) seguram as teclas apertadas neles,
+  // e o F4 precisa funcionar também com o foco dentro do painel.
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'F4') return;
+    e.preventDefault();
+    if (!e.repeat) tuningPanel.toggle();
+  }, true);
+}
 // Em desenvolvimento, o jogador local fica acessível no console (depuração e testes visuais).
 if (import.meta.env.DEV) window.__me = me;
-createStartScreen({ canvas });
+createStartScreen({ canvas, extra: tuningOn ? [['F4', 'painel de ajuste do movimento']] : [] });
 const hud = createHud();
 // Cronômetro do circuito (só em mapas com faixas de largada e chegada).
 const circuit = map.timer ? createCircuitTimer(map.timer, { mapId: map.id, storage }) : null;
@@ -156,8 +171,8 @@ const loop = createLoop({
       ? `${SIDES[p.wall.side]} (${p.wall.type})${p.wall.age > 0 ? ` lembrada ${p.wall.age.toFixed(2)} s` : ''}`
       : '-');
     debug.set('pulo duplo', p.jumpsLeft > 0 ? 'disponível' : 'usado');
-    debug.set('pulos na parede', `${p.wallJumpsLeft} de ${MOVE.WALL_JUMP_MAX}`);
-    debug.set('dash (cargas)', `${p.dashCharges} de ${MOVE.DASH_CHARGES}`);
+    debug.set('pulos na parede', `${p.wallJumpsLeft} de ${me.move.WALL_JUMP_MAX}`);
+    debug.set('dash (cargas)', `${p.dashCharges} de ${me.move.DASH_CHARGES}`);
     debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado', wallrun: 'correndo na parede', slam: 'golpe no chão', dash: 'dash', rail: 'no corrimão' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
     debug.set('sensibilidade', me.sensitivity.toFixed(4));
