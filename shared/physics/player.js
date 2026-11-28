@@ -14,7 +14,7 @@
 //   crouchPressed boolean, agachar/deslizar apertado neste passo
 //   dashPressed   boolean, dash apertado neste passo
 import { MOVE, PLAYER } from '../constants.js';
-import { moveAndCollide } from './collide.js';
+import { moveAndCollide, fitsWithHeight } from './collide.js';
 import { wishDir, accelerate, airAccelerate, applyFriction, redirectHorizontal } from './move.js';
 
 /** Entrada vazia (nada apertado), útil como padrão e em testes. */
@@ -59,6 +59,10 @@ export function createPlayer(spawn) {
     events: [],
     /** Está agachado ou deslizando? (F1-10) */
     crouching: false,
+    /** Está deslizando? (F1-10) */
+    sliding: false,
+    /** Tempo até o próximo impulso de deslize valer (s). */
+    slideCooldown: 0,
     /** Altura atual do corpo (m): PLAYER.HEIGHT em pé, PLAYER.CROUCH_HEIGHT agachado. */
     height: PLAYER.HEIGHT,
 
@@ -102,15 +106,23 @@ export function stepPlayer(p, input, map, dt) {
   if (p.onGround) p.jumpsLeft = MOVE.AIR_JUMPS;
   const doubleJumping = !jumping && !p.onGround && input.jumpPressed && p.jumpsLeft > 0;
 
+  // Deslize e agachar (F1-10).
+  updateCrouch(p, input, map, jumping, dt);
+
   // No chão (estado do passo anterior): atrito e aceleração na direção das teclas (F1-06).
   // No passo do pulo não há atrito: quem emenda pulos não perde velocidade.
   // No ar: sem atrito, com controle aéreo (air strafe, F1-08).
   const wish = wishDir(input);
   const amount = Math.hypot(wish.x, wish.z); // 0 a 1 (teclado: 0 ou 1)
   const dir = amount > 0 ? { x: wish.x / amount, y: 0, z: wish.z / amount } : null;
-  if (p.onGround || jumping) {
+  if (p.sliding && !jumping) {
+    // Deslize: atrito baixo e sem aceleração pelas teclas, só um leve direcionamento.
+    const v = applyFriction(p.vel, MOVE.SLIDE_FRICTION, 0, dt);
+    p.vel = redirectHorizontal(v, dir, Math.min(1, MOVE.SLIDE_STEER * dt));
+  } else if (p.onGround || jumping) {
     const v = jumping ? { ...p.vel } : applyFriction(p.vel, MOVE.FRICTION, MOVE.STOP_SPEED, dt);
-    p.vel = dir ? accelerate(v, dir, MOVE.WALK_SPEED * amount, MOVE.GROUND_ACCEL, dt) : v;
+    const target = p.crouching ? MOVE.CROUCH_SPEED : MOVE.WALK_SPEED; // agachado anda devagar
+    p.vel = dir ? accelerate(v, dir, target * amount, MOVE.GROUND_ACCEL, dt) : v;
   } else if (doubleJumping) {
     // Mistura a direção atual com a das teclas, sem perder velocidade.
     p.vel = redirectHorizontal(p.vel, dir, MOVE.DOUBLE_JUMP_REDIRECT);
@@ -133,7 +145,50 @@ export function stepPlayer(p, input, map, dt) {
     p.events.push({ type: 'doubleJump' });
   }
 
-  return stepBody(p, map, dt);
+  stepBody(p, map, dt);
+  p.state = p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
+  return p;
+}
+
+/** Termina o deslize (mantém agachado; quem decide levantar é updateCrouch). */
+function endSlide(p) {
+  if (!p.sliding) return;
+  p.sliding = false;
+  p.events.push({ type: 'slideEnd' });
+}
+
+/**
+ * Regras de agachar e deslizar (F1-10), antes do movimento do passo.
+ * - Apertar agachar no chão acima de SLIDE_MIN_SPEED: desliza, com impulso se o tempo de espera passou.
+ * - Deslizando: termina abaixo de CROUCH_SPEED (vira agachado), soltando a tecla, pulando ou saindo do chão.
+ * - Agachado com a tecla solta: levanta só se couber em pé.
+ */
+function updateCrouch(p, input, map, jumping, dt) {
+  p.slideCooldown = Math.max(0, p.slideCooldown - dt);
+  const speed = Math.hypot(p.vel.x, p.vel.z);
+
+  if (p.onGround && !jumping && input.crouchPressed && !p.sliding && speed > MOVE.SLIDE_MIN_SPEED) {
+    p.sliding = true;
+    p.crouching = true;
+    if (p.slideCooldown === 0) {
+      const k = (speed + MOVE.SLIDE_BOOST) / speed;
+      p.vel.x *= k;
+      p.vel.z *= k;
+      p.slideCooldown = MOVE.SLIDE_BOOST_COOLDOWN;
+    }
+    p.events.push({ type: 'slideStart' });
+  } else if (p.sliding) {
+    // Pulo no deslize (slide hop): sai com a velocidade do deslize (o passo do pulo não tem atrito).
+    if (jumping || !p.onGround || !input.crouch || speed < MOVE.CROUCH_SPEED) endSlide(p);
+  }
+
+  if (input.crouch && p.onGround && !jumping) p.crouching = true;
+
+  // Levantar: só soltando a tecla (ou ao pular) e se houver espaço acima.
+  if (p.crouching && !p.sliding && (!input.crouch || jumping) && fitsWithHeight(p, map, PLAYER.HEIGHT)) {
+    p.crouching = false;
+  }
+  p.height = p.crouching ? PLAYER.CROUCH_HEIGHT : PLAYER.HEIGHT;
 }
 
 /**

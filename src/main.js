@@ -119,6 +119,7 @@ const loop = createLoop({
     debug.set('velocidade (m/s)', Math.hypot(p.vel.x, p.vel.z));
     debug.set('queda (m/s)', p.vel.y);
     debug.set('no chão', p.onGround ? 'sim' : 'não');
+    debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
     debug.set('sensibilidade', me.sensitivity.toFixed(4));
     debug.set('renasceu', me.respawns);

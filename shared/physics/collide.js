@@ -48,6 +48,21 @@ const NORMALS = {
   z: (dir) => ({ x: 0, y: 0, z: -dir }),
 };
 
+/**
+ * O jogador caberia com esta altura na posição atual? (ex.: para levantar do agachado)
+ * @param {object} p jogador
+ * @param {{ boxes: Array }} map
+ * @param {number} height altura a testar (m)
+ */
+export function fitsWithHeight(p, map, height) {
+  const r = PLAYER.RADIUS;
+  const test = {
+    min: { x: p.pos.x - r, y: p.pos.y, z: p.pos.z - r },
+    max: { x: p.pos.x + r, y: p.pos.y + height, z: p.pos.z + r },
+  };
+  return !(map?.boxes ?? []).some((b) => isSolid(b) && overlaps(test, b));
+}
+
 /** Alguma caixa sobrepõe o jogador na posição atual? */
 function blocked(p, boxes) {
   const pb = playerBox(p);

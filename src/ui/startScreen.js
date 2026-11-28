@@ -5,6 +5,7 @@ const CONTROLS = [
   ['W A S D', 'andar'],
   ['Espaço', 'pular (segure para emendar; de novo no ar: pulo duplo)'],
   ['A/D + mouse no ar', 'curvar e ganhar velocidade'],
+  ['C ou Ctrl', 'agachar; correndo: deslizar'],
   ['Mouse', 'olhar'],
   ['F3', 'painel de informações'],
   ['Esc', 'soltar o mouse'],

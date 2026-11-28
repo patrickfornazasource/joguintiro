@@ -72,11 +72,13 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
   let yaw = spawn.yaw ?? 0;
   let pitch = 0;
   let respawns = 0;
+  let eyeHeight = PLAYER.EYE_HEIGHT; // altura do olho mostrada (suavizada ao agachar/levantar)
 
   function respawn() {
     player = createPlayer(spawn);
     prev = { ...player.pos };
     smoother.reset();
+    eyeHeight = PLAYER.EYE_HEIGHT;
     yaw = spawn.yaw ?? 0;
     pitch = 0;
     respawns++;
@@ -120,9 +122,13 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     eye(alpha, frameDt) {
       const lerp = (a, b) => a + (b - a) * alpha;
       const feetY = smoother.update(lerp(prev.y, player.pos.y), player.onGround, frameDt);
+      // Agachar/deslizar: a física muda a altura de uma vez; a câmera desce/sobe suavemente.
+      const target = player.crouching ? PLAYER.CROUCH_EYE_HEIGHT : PLAYER.EYE_HEIGHT;
+      eyeHeight += (target - eyeHeight) * (1 - Math.exp(-VIEW.CROUCH_SMOOTH_RATE * Math.max(0, frameDt)));
+      if (Math.abs(target - eyeHeight) < 1e-4) eyeHeight = target;
       return {
         x: lerp(prev.x, player.pos.x),
-        y: feetY + PLAYER.EYE_HEIGHT,
+        y: feetY + eyeHeight,
         z: lerp(prev.z, player.pos.z),
       };
     },
