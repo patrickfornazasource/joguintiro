@@ -15,7 +15,7 @@
 //   dashPressed   boolean, dash apertado neste passo
 import { MOVE, PLAYER } from '../constants.js';
 import { moveAndCollide } from './collide.js';
-import { wishDir, accelerate, applyFriction } from './move.js';
+import { wishDir, accelerate, airAccelerate, applyFriction } from './move.js';
 
 /** Entrada vazia (nada apertado), útil como padrão e em testes. */
 export function emptyInput() {
@@ -100,14 +100,15 @@ export function stepPlayer(p, input, map, dt) {
 
   // No chão (estado do passo anterior): atrito e aceleração na direção das teclas (F1-06).
   // No passo do pulo não há atrito: quem emenda pulos não perde velocidade.
-  // No ar a velocidade horizontal se mantém (controle aéreo vem na F1-08).
+  // No ar: sem atrito, com controle aéreo (air strafe, F1-08).
+  const wish = wishDir(input);
+  const amount = Math.hypot(wish.x, wish.z); // 0 a 1 (teclado: 0 ou 1)
+  const dir = amount > 0 ? { x: wish.x / amount, y: 0, z: wish.z / amount } : null;
   if (p.onGround || jumping) {
     const v = jumping ? { ...p.vel } : applyFriction(p.vel, MOVE.FRICTION, MOVE.STOP_SPEED, dt);
-    const wish = wishDir(input);
-    const amount = Math.hypot(wish.x, wish.z); // 0 a 1 (teclado: 0 ou 1)
-    p.vel = amount > 0
-      ? accelerate(v, { x: wish.x / amount, y: 0, z: wish.z / amount }, MOVE.WALK_SPEED * amount, MOVE.GROUND_ACCEL, dt)
-      : v;
+    p.vel = dir ? accelerate(v, dir, MOVE.WALK_SPEED * amount, MOVE.GROUND_ACCEL, dt) : v;
+  } else if (dir) {
+    p.vel = airAccelerate(p.vel, dir, MOVE.WALK_SPEED * amount, MOVE.AIR_ACCEL, MOVE.AIR_WISH_CAP, dt);
   }
 
   if (jumping) {

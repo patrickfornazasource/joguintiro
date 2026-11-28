@@ -84,12 +84,12 @@ test('trocar de direção: vira para o lado novo e fica praticamente em 9 m/s', 
   assert.ok(Math.hypot(p.vel.x, p.vel.z) <= MOVE.WALK_SPEED + 0.01);
 });
 
-test('no ar: sem atrito e sem aceleração (controle aéreo vem na F1-08)', () => {
+test('no ar: sem atrito; o controle aéreo (F1-08) soma só até o teto na direção apertada', () => {
   const p = createPlayer({ x: 0, y: 50, z: 0 });
   p.vel.x = 5;
   for (let i = 0; i < 60; i++) stepPlayer(p, input({ moveZ: 1 }), floorMap, DT);
-  assert.equal(p.vel.x, 5);
-  assert.equal(p.vel.z, 0);
+  assert.equal(p.vel.x, 5, 'sem atrito no ar');
+  assert.ok(Math.abs(p.vel.z + MOVE.AIR_WISH_CAP) < 1e-9, `em -z só até o teto: ${p.vel.z}`);
 });
 
 test('andando contra a parede com a tecla segurada, fica encostado', () => {
