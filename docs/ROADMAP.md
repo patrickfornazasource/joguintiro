@@ -60,9 +60,9 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 - [x] **[F1-18](tarefas/F1-18.md)** Sensação de velocidade e velocímetro
 - [x] **[F1-19](tarefas/F1-19.md)** Mapa de treino com estações
 - [x] **[F1-20](tarefas/F1-20.md)** Painel de ajuste ao vivo (F4)
-- [ ] **[F1-21](tarefas/F1-21.md)** Roteiro do Teste humano #1
+- [x] **[F1-21](tarefas/F1-21.md)** Roteiro do Teste humano #1
 
-**Marco F1 🧑 Teste humano #1:** o dono do projeto segue o roteiro de `docs/testes/teste-humano-01.md` no mapa de treino, ajusta os números no painel F4 e responde: "o movimento é gostoso?". Ajustes até a resposta ser sim. **Status: aguardando.**
+**Marco F1 🧑 Teste humano #1:** o dono do projeto segue o roteiro de `docs/testes/teste-humano-01.md` no mapa de treino, ajusta os números no painel F4 e responde: "o movimento é gostoso?". Ajustes até a resposta ser sim. **Status: aguardando teste humano** (roteiro pronto).
 
 ---
 
