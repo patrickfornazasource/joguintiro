@@ -76,6 +76,18 @@ export const MOVE = Object.freeze({
    * 0 = não vira; 1 = vira totalmente. A velocidade (o módulo) não muda.
    */
   DOUBLE_JUMP_REDIRECT: 0.6,
+  /** Velocidade mínima no chão para apertar agachar virar deslize (m/s). Abaixo disso, só agacha. */
+  SLIDE_MIN_SPEED: 6,
+  /** Impulso ao começar a deslizar (m/s), na direção do movimento. */
+  SLIDE_BOOST: 4,
+  /** Atrito durante o deslize (1/s): bem menor que o normal (FRICTION), por isso o deslize vai longe. */
+  SLIDE_FRICTION: 0.6,
+  /** Tempo mínimo entre dois impulsos de deslize (s): deslizar de novo antes disso não ganha impulso. */
+  SLIDE_BOOST_COOLDOWN: 1.0,
+  /** Abaixo desta velocidade o deslize vira agachado (m/s); é também a velocidade de andar agachado. */
+  CROUCH_SPEED: 4.5,
+  /** Leve direcionamento no deslize (1/s): fração do ângulo até as teclas que vira por segundo. */
+  SLIDE_STEER: 1.5,
 });
 
 /** Câmera e mouse. */
@@ -86,6 +98,8 @@ export const VIEW = Object.freeze({
   MAX_PITCH: (89 * Math.PI) / 180,
   /** Campo de visão vertical da câmera (graus). */
   FOV: 90,
+  /** Rapidez com que a câmera abaixa ou sobe ao agachar e levantar (1/s). Só visual. */
+  CROUCH_SMOOTH_RATE: 12,
 });
 
 /** Rede. */

@@ -49,7 +49,7 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 - [x] **[F1-07](tarefas/F1-07.md)** Pulo, bunny hop e tolerância de borda
 - [x] **[F1-08](tarefas/F1-08.md)** Controle aéreo (air strafe)
 - [x] **[F1-09](tarefas/F1-09.md)** Pulo duplo
-- [ ] **[F1-10](tarefas/F1-10.md)** Deslize e slide hop
+- [x] **[F1-10](tarefas/F1-10.md)** Deslize e slide hop
 - [ ] **[F1-11](tarefas/F1-11.md)** Detector de parede
 - [ ] **[F1-12](tarefas/F1-12.md)** Corrida na parede
 - [ ] **[F1-13](tarefas/F1-13.md)** Pulo na parede
