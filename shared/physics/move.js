@@ -70,6 +70,26 @@ export function airAccelerate(vel, dir, wishSpeed, accel, wishCap, dt) {
 }
 
 /**
+ * Vira a direção horizontal da velocidade em direção a `dir` sem mudar o módulo.
+ * Gira a fração `fraction` (0 a 1) do ângulo entre as duas direções. A vertical não muda.
+ * Sem velocidade horizontal ou sem direção, devolve uma cópia sem mudanças.
+ * @param {{x,y,z}} vel (m/s)
+ * @param {{x,y,z}|null} dir direção desejada no plano, comprimento 1
+ * @param {number} fraction 0 = não vira, 1 = vira totalmente
+ */
+export function redirectHorizontal(vel, dir, fraction) {
+  const speed = Math.hypot(vel.x, vel.z);
+  if (!dir || speed < 1e-9) return { ...vel };
+  const from = Math.atan2(vel.z, vel.x);
+  const to = Math.atan2(dir.z, dir.x);
+  let diff = to - from;
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff <= -Math.PI) diff += 2 * Math.PI;
+  const angle = from + diff * Math.max(0, Math.min(1, fraction));
+  return { x: Math.cos(angle) * speed, y: vel.y, z: Math.sin(angle) * speed };
+}
+
+/**
  * Atrito no plano (x, z): tira friction x velocidade por segundo; abaixo de stopSpeed,
  * freia como se estivesse a stopSpeed (para de vez). Nunca inverte o sentido.
  * Não altera `vel`: devolve uma velocidade nova (y fica igual).

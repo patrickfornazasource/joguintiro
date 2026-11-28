@@ -15,7 +15,7 @@
 //   dashPressed   boolean, dash apertado neste passo
 import { MOVE, PLAYER } from '../constants.js';
 import { moveAndCollide } from './collide.js';
-import { wishDir, accelerate, airAccelerate, applyFriction } from './move.js';
+import { wishDir, accelerate, airAccelerate, applyFriction, redirectHorizontal } from './move.js';
 
 /** Entrada vazia (nada apertado), útil como padrão e em testes. */
 export function emptyInput() {
@@ -98,6 +98,10 @@ export function stepPlayer(p, input, map, dt) {
   const wantsJump = p.jumpBuffer > 0 || (input.jump && p.onGround);
   const jumping = canJump && wantsJump;
 
+  // Pulo duplo (F1-09): recarrega no chão; no ar, só com um aperto novo (segurar não gasta).
+  if (p.onGround) p.jumpsLeft = MOVE.AIR_JUMPS;
+  const doubleJumping = !jumping && !p.onGround && input.jumpPressed && p.jumpsLeft > 0;
+
   // No chão (estado do passo anterior): atrito e aceleração na direção das teclas (F1-06).
   // No passo do pulo não há atrito: quem emenda pulos não perde velocidade.
   // No ar: sem atrito, com controle aéreo (air strafe, F1-08).
@@ -107,6 +111,9 @@ export function stepPlayer(p, input, map, dt) {
   if (p.onGround || jumping) {
     const v = jumping ? { ...p.vel } : applyFriction(p.vel, MOVE.FRICTION, MOVE.STOP_SPEED, dt);
     p.vel = dir ? accelerate(v, dir, MOVE.WALK_SPEED * amount, MOVE.GROUND_ACCEL, dt) : v;
+  } else if (doubleJumping) {
+    // Mistura a direção atual com a das teclas, sem perder velocidade.
+    p.vel = redirectHorizontal(p.vel, dir, MOVE.DOUBLE_JUMP_REDIRECT);
   } else if (dir) {
     p.vel = airAccelerate(p.vel, dir, MOVE.WALK_SPEED * amount, MOVE.AIR_ACCEL, MOVE.AIR_WISH_CAP, dt);
   }
@@ -117,6 +124,13 @@ export function stepPlayer(p, input, map, dt) {
     p.coyote = 0; // a tolerância de borda vale para um pulo só
     p.jumpBuffer = 0;
     p.events.push({ type: 'jump' });
+  }
+
+  if (doubleJumping) {
+    p.vel.y = MOVE.DOUBLE_JUMP_SPEED;
+    p.jumpsLeft -= 1;
+    p.jumpBuffer = 0; // o aperto foi usado no pulo duplo: não vale como pulo antecipado no pouso
+    p.events.push({ type: 'doubleJump' });
   }
 
   return stepBody(p, map, dt);
