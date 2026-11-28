@@ -163,3 +163,27 @@ test('durante o slam, encostado numa parede, Espaço não faz pulo na parede', (
   assert.equal(p.state, 'slam');
   assert.equal(p.vel.y, -MOVE.SLAM_SPEED);
 });
+
+// Pedido da revisão da F1-15: travar a regra "sem pulo do chão durante o dash".
+test('durante o dash no chão, Espaço não pula', () => {
+  const p = createPlayer({ x: 0, y: 0, z: 0 });
+  stepPlayer(p, emptyInput(), floorMap, DT);
+  stepPlayer(p, input({ dashPressed: true }), floorMap, DT);
+  assert.equal(p.state, 'dash');
+  stepPlayer(p, input({ jump: true, jumpPressed: true }), floorMap, DT);
+  assert.equal(has(p, 'jump'), false, 'sem pulo durante o dash');
+  assert.equal(p.state, 'dash');
+  assert.equal(p.vel.y, 0);
+});
+
+test('dash no chão continua pisando: sobe degrau baixo durante o arranco', () => {
+  const step = box(3, 0.15, 0, 4, 0.3, 4); // degrau de 0,3 m em x de 1 a 5
+  const map = { id: 't', name: 't', boxes: [floor, step], spawns: [] };
+  const p = createPlayer({ x: 0, y: 0, z: 0, yaw: -Math.PI / 2 }); // olhando para +x
+  stepPlayer(p, emptyInput(), map, DT);
+  stepPlayer(p, input({ yaw: -Math.PI / 2, dashPressed: true }), map, DT);
+  assert.equal(p.onGround, true, 'no chão durante o dash');
+  for (let i = 0; i < 10 && p.dash; i++) stepPlayer(p, input({ yaw: -Math.PI / 2 }), map, DT);
+  assert.ok(p.pos.x > 1.5, `passou da borda do degrau: x = ${p.pos.x}`);
+  assert.ok(Math.abs(p.pos.y - 0.3) < 1e-9, `em cima do degrau: y = ${p.pos.y}`);
+});

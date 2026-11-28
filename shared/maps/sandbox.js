@@ -60,17 +60,31 @@ function wallrunCorridor() {
   return out;
 }
 
+/**
+ * Plataforma de salto direcional e o alvo dela (F1-16), no lado leste perto de quem nasce.
+ * `launch` é a velocidade de saída (m/s): dado do mapa, ajustado para pousar no alvo.
+ */
+export const PAD_TO_HIGH = Object.freeze({
+  pad: { x: 8, z: 22 },
+  launch: Object.freeze({ x: 20.7, y: 17, z: 0 }),
+  target: { x: 25, z: 21, width: 6, depth: 8, top: 6 }, // plataforma alta: x de 22 a 28, z de 17 a 25
+});
+
+/** Altura das paredes externas do Sandbox (m). Ver o comentário nas paredes. */
+export const OUTER_WALL_HEIGHT = 16;
+
 export const sandbox = Object.freeze({
   id: 'sandbox',
   name: 'Sandbox (cinza)',
   boxes: [
     // Chão 60x60
     box(0, -0.5, 0, 60, 1, 60),
-    // Paredes externas (6 m de altura)
-    box(0, 3, -29.5, 60, 6, 1),
-    box(0, 3, 29.5, 60, 6, 1),
-    box(-29.5, 3, 0, 1, 6, 60),
-    box(29.5, 3, 0, 1, 6, 60),
+    // Paredes externas, 16 m de altura (F1-16): com plataforma de salto (6 m), plataforma alta
+    // (6 m) e escalada (pulo + pulos na parede + duplo, até ~5,5 m), 6 m deixava sair do mapa.
+    box(0, OUTER_WALL_HEIGHT / 2, -29.5, 60, OUTER_WALL_HEIGHT, 1),
+    box(0, OUTER_WALL_HEIGHT / 2, 29.5, 60, OUTER_WALL_HEIGHT, 1),
+    box(-29.5, OUTER_WALL_HEIGHT / 2, 0, 1, OUTER_WALL_HEIGHT, 60),
+    box(29.5, OUTER_WALL_HEIGHT / 2, 0, 1, OUTER_WALL_HEIGHT, 60),
     // Blocos soltos
     box(-8, 0.5, -6, 2, 1, 2),
     box(-12, 1, -10, 4, 2, 4),
@@ -79,8 +93,11 @@ export const sandbox = Object.freeze({
     // Corredor de paredes de corrida
     box(18, 2.5, -4, 0.5, 5, 16, T.WALLRUN),
     box(22, 2.5, -4, 0.5, 5, 16, T.WALLRUN),
-    // Plataforma de salto
+    // Plataforma de salto vertical (sem direção: só para cima)
     box(-16, 0.1, 12, 3, 0.2, 3, T.PAD),
+    // Plataforma de salto direcional (F1-16): lança para +x até a plataforma alta (topo a 6 m)
+    box(PAD_TO_HIGH.pad.x, 0.1, PAD_TO_HIGH.pad.z, 3, 0.2, 3, T.PAD, { launch: PAD_TO_HIGH.launch }),
+    box(PAD_TO_HIGH.target.x, PAD_TO_HIGH.target.top / 2, PAD_TO_HIGH.target.z, PAD_TO_HIGH.target.width, PAD_TO_HIGH.target.top, PAD_TO_HIGH.target.depth),
     // Corrimão
     box(0, 1, -18, 10, 0.15, 0.15, T.RAIL),
     // Escada simples com patamar

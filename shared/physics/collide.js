@@ -87,6 +87,7 @@ function tryStepUp(p, boxes, hits) {
   const ground = hits.find((b) => b.max.y === top);
   p.onGround = true;
   p.groundType = ground.type;
+  p.groundBox = ground;
   if (p.vel.y < 0) p.vel.y = 0;
   return true;
 }
@@ -116,6 +117,7 @@ function moveAxis(p, boxes, axis, delta, canStep) {
         p.pos.y = b.max.y; // pés em cima da caixa
         p.onGround = true;
         p.groundType = b.type;
+        p.groundBox = b;
       } else {
         p.pos.y = b.min.y - p.height; // cabeça embaixo da caixa
       }
@@ -140,6 +142,7 @@ export function moveAndCollide(p, map, dt) {
   const wasOnGround = p.onGround;
   p.onGround = false;
   p.groundType = null;
+  p.groundBox = null;
   p.contact = null;
 
   const boxes = (map?.boxes ?? []).filter(isSolid);

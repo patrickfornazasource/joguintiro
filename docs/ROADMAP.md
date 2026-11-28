@@ -55,7 +55,7 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 - [x] **[F1-13](tarefas/F1-13.md)** Pulo na parede
 - [x] **[F1-14](tarefas/F1-14.md)** Golpe no chão (slam) e pulo de slam
 - [x] **[F1-15](tarefas/F1-15.md)** Dash provisório
-- [ ] **[F1-16](tarefas/F1-16.md)** Plataformas de salto
+- [x] **[F1-16](tarefas/F1-16.md)** Plataformas de salto
 - [ ] **[F1-17](tarefas/F1-17.md)** Corrimão deslizável
 - [ ] **[F1-18](tarefas/F1-18.md)** Sensação de velocidade e velocímetro
 - [ ] **[F1-19](tarefas/F1-19.md)** Mapa de treino com estações
