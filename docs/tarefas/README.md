@@ -46,6 +46,25 @@ Regra de detalhamento: só as fases **atual e seguinte** ficam detalhadas em fic
 | [F1-20](F1-20.md) | Painel de ajuste ao vivo (F4) | F1-18 | M |
 | [F1-21](F1-21.md) | Roteiro do Teste humano #1 | F1-19, F1-20, F0-11 | P |
 
+## Fase 2: Combate e Carga Cinética
+
+| Ficha | Tarefa | Depende de | Tamanho |
+|---|---|---|---|
+| [F2-01](F2-01.md) | Sistema de Carga | F1-21 | M |
+| [F2-02](F2-02.md) | Rifle Cinético | F2-01 | M |
+| [F2-03](F2-03.md) | Descarga (disparo alternativo) | F2-02 | M |
+| [F2-04](F2-04.md) | HUD de combate | F2-01, F2-02 | M |
+| [F2-05](F2-05.md) | Alvos treináveis (bots offline) | F2-02 | M |
+| [F2-06](F2-06.md) | Spray (escopeta) | F2-02 | P |
+| [F2-07](F2-07.md) | Lata (projétil explosivo) | F2-02 | M |
+| [F2-08](F2-08.md) | Troca de armas | F2-06, F2-07 | P |
+| [F2-09](F2-09.md) | Morte e renascimento | F2-02, F2-05 | M |
+| [F2-10](F2-10.md) | Arma na tela (viewmodel) | F2-08 | M |
+| [F2-11](F2-11.md) | Sons sintetizados | F2-02 | P |
+| [F2-12](F2-12.md) | Dash de coice definitivo | F1-15, F2-01, F2-06, F2-07 | M |
+
+**Ordem de execução proposta (uma por vez):** F2-01, F2-02, F2-04, F2-05, F2-03, F2-06, F2-07, F2-08, F2-12, F2-09, F2-10, F2-11. Primeiro a Carga, o Rifle, o HUD e os alvos, porque juntos já dão para sentir "correr = mais dano". Depois vêm a Descarga e as outras armas, a troca e o dash definitivo. Por último, morte, arma na tela e sons.
+
 ## Ordem e paralelismo
 
 Tarefas sem dependência entre si podem ser feitas por bots diferentes ao mesmo tempo. Ondas sugeridas:
@@ -67,5 +86,10 @@ Tarefas sem dependência entre si podem ser feitas por bots diferentes ao mesmo 
 | 13 | F1-18, F1-19 |
 | 14 | F1-20 |
 | 15 | F1-21 (fim da fase: Teste humano #1) |
+| 16 | F2-01 |
+| 17 | F2-02 |
+| 18 | F2-03, F2-04, F2-05, F2-06, F2-07, F2-11 |
+| 19 | F2-08, F2-09, F2-12 |
+| 20 | F2-10 (fim da fase: Teste humano #2) |
 
 **Recomendação para começar:** uma tarefa por vez, em sequência, até a Fase 0 terminar. Paralelismo só depois que o processo de revisão estiver rodando bem.

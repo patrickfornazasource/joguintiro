@@ -25,7 +25,7 @@ Cada estação tem uma placa. Faça na ordem, de 1 a 10.
 1. **Bunny hop:** segure W e Espaço.
 2. **Air strafe:** pule o buraco curvando para a direita (D e mouse).
 3. **Deslize:** corra e aperte C antes do túnel baixo.
-4. **Corrida na parede:** pule de lado numa parede. **Novidade:** vale em qualquer parede, cinza ou ciano.
+4. **Corrida na parede:** comece encostado à esquerda da plataforma; o tempo do pulo é apertado. Pule de lado numa parede. **Novidade:** vale em qualquer parede, cinza ou ciano.
 5. **Pulo na parede:** suba o poço pulando de uma parede para a outra.
 6. **Slam:** do alto da torre, C no X amarelo. Ao bater, Espaço e Espaço no ar.
 7. **Dash:** pulo, pulo duplo e Shift para cruzar o vão.
