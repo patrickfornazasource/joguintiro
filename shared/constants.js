@@ -190,6 +190,30 @@ export const CHARGE = Object.freeze({
   CHARGE_LONG_SLIDE_BONUS: 8,
 });
 
+/** Armas (F2-02 em diante). GDD seções 3 e 6. Valores provisórios (sugestões das fichas). */
+export const WEAPONS = Object.freeze({
+  /** Velocidade horizontal em que o multiplicador de dano chega ao máximo de cada arma (m/s). */
+  DAMAGE_SPEED_FULL: 30,
+  /**
+   * Fração da parte VERTICAL do coice que é aplicada (0 a 1). 0 = o coice só empurra na
+   * horizontal. Fica em 0 até a decisão do dono sobre o limite vertical de impulsos de arma
+   * (dúvida 14 das fichas da F2). Fora do painel F4.
+   */
+  RECOIL_VERTICAL_SCALE: 0,
+  /** Rifle: custo de um tiro (pontos de Carga). */
+  RIFLE_COST: 10,
+  /** Rifle: dano base, parado ou andando (pontos de vida). */
+  RIFLE_DAMAGE: 20,
+  /** Rifle: multiplicador máximo do dano (vezes), em DAMAGE_SPEED_FULL ou acima. */
+  RIFLE_SPEED_MULT_MAX: 3,
+  /** Rifle: tempo mínimo entre tiros (s). */
+  RIFLE_FIRE_INTERVAL: 0.25,
+  /** Rifle: alcance máximo do raio (m). */
+  RIFLE_RANGE: 200,
+  /** Rifle: empurrão por tiro, na direção oposta à mira (m/s). */
+  RIFLE_RECOIL: 2,
+});
+
 /** Painel de ajuste ao vivo (F4, F1-20): só com ?ajuste=1 no endereço. */
 export const TUNING = Object.freeze({
   /** Menor valor de cada controle, em vezes o valor padrão (0,25 = um quarto do padrão). */

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MOVE, PHYSICS, TUNING, CHARGE } from '../shared/constants.js';
-import { TUNING_GROUPS, CHARGE_TUNING_GROUPS, TUNING_SETS, tuningItem, tuningRange, sanitizeMove, changedValues, tuningJson, tuningJsonAll } from '../shared/tuning.js';
+import { MOVE, PHYSICS, TUNING, CHARGE, WEAPONS } from '../shared/constants.js';
+import { TUNING_GROUPS, CHARGE_TUNING_GROUPS, WEAPON_TUNING_GROUPS, TUNING_SETS, tuningItem, tuningRange, sanitizeMove, changedValues, tuningJson, tuningJsonAll } from '../shared/tuning.js';
 import { treino } from '../shared/maps/treino.js';
 import { getMap } from '../shared/maps/index.js';
 import { createPlayer, stepPlayer, emptyInput } from '../shared/physics/player.js';
@@ -91,7 +91,7 @@ test('?ajuste=1 liga o painel; salvar guarda só os mudados e volta ao abrir; sa
   assert.equal(isTuningEnabled(''), false);
   assert.equal(isTuningEnabled('?ajuste=0'), false);
   const storage = memoryStorage();
-  assert.deepEqual(loadTuning(storage), { cfg: { ...MOVE }, charge: { ...CHARGE }, loaded: 0 });
+  assert.deepEqual(loadTuning(storage), { cfg: { ...MOVE }, charge: { ...CHARGE }, weapons: { ...WEAPONS }, loaded: 0 });
   const cfg = sanitizeMove({ JUMP_SPEED: 11 });
   assert.equal(saveTuning(storage, cfg), true);
   assert.deepEqual(JSON.parse(storage.data.get(TUNING_STORAGE_KEY)), { JUMP_SPEED: 11 });
@@ -295,4 +295,18 @@ test('F2-01: salvar e carregar guarda movimento e Carga juntos; Copiar valores t
   assert.deepEqual(Object.keys(data.alterados).sort(), ['CHARGE_IDLE_RATE', 'JUMP_SPEED']);
   assert.equal(data.todos.CHARGE_MAX, 100);
   assert.equal(data.todos.WALK_SPEED, MOVE.WALK_SPEED);
+});
+
+test('F2-02: o painel tem o grupo "Rifle" com todos os números das armas, menos a parte vertical do coice (fixa)', () => {
+  const keys = WEAPON_TUNING_GROUPS.flatMap((g) => g.items.map(([k]) => k));
+  assert.deepEqual([...keys].sort(), Object.keys(WEAPONS).filter((k) => k !== 'RECOIL_VERTICAL_SCALE').sort());
+  for (const k of keys) assert.ok(tuningItem(k).label && tuningItem(k).unit, k);
+  const all = TUNING_SETS.flatMap((set) => set.groups.flatMap((g) => g.items.map(([k]) => k)));
+  assert.equal(new Set(all).size, all.length, 'chaves únicas entre os conjuntos');
+  // A parte vertical do coice não muda por valor salvo (até a decisão do dono).
+  assert.equal(sanitizeMove({ RECOIL_VERTICAL_SCALE: 1, RIFLE_DAMAGE: 30 }, WEAPONS).RECOIL_VERTICAL_SCALE, 0);
+  assert.equal(sanitizeMove({ RIFLE_DAMAGE: 30 }, WEAPONS).RIFLE_DAMAGE, 30);
+  const storage = memoryStorage();
+  assert.equal(saveTuning(storage, sanitizeMove({}), sanitizeMove({}, CHARGE), sanitizeMove({ RIFLE_COST: 15 }, WEAPONS)), true);
+  assert.equal(loadTuning(storage).weapons.RIFLE_COST, 15);
 });
