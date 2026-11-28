@@ -15,6 +15,7 @@
 //   dashPressed   boolean, dash apertado neste passo
 import { MOVE, PLAYER } from '../constants.js';
 import { moveAndCollide, fitsWithHeight } from './collide.js';
+import { updateWall } from './walls.js';
 import { wishDir, accelerate, airAccelerate, applyFriction, redirectHorizontal } from './move.js';
 
 /** Entrada vazia (nada apertado), útil como padrão e em testes. */
@@ -69,8 +70,13 @@ export function createPlayer(spawn) {
     // Campos reservados para as próximas tarefas (ainda sem efeito):
     /** Pulos extras disponíveis no ar (pulo duplo, F1-09). */
     jumpsLeft: 0,
-    /** Parede em que está correndo ou encostado, ou null (F1-11 a F1-13). */
+    /**
+     * Parede encostada agora ou lembrada (até MOVE.WALL_MEMORY s), ou null (F1-11).
+     * { normal, type, side: 'left'|'right'|'front'|'back', distance, age }
+     */
     wall: null,
+    /** Tempo desde o último contato com parede (s). */
+    wallAge: Infinity,
     /** Cargas de dash disponíveis (F1-15). */
     dashCharges: 0,
     /** Estado de movimento: 'air', 'ground', 'slide', 'wallrun', 'slam'... (F1-06 em diante). */
@@ -146,6 +152,7 @@ export function stepPlayer(p, input, map, dt) {
   }
 
   stepBody(p, map, dt);
+  updateWall(p, map, dt); // detector de parede (F1-11)
   p.state = p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
   return p;
 }

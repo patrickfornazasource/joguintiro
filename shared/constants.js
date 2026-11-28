@@ -88,6 +88,10 @@ export const MOVE = Object.freeze({
   CROUCH_SPEED: 4.5,
   /** Leve direcionamento no deslize (1/s): fração do ângulo até as teclas que vira por segundo. */
   SLIDE_STEER: 1.5,
+  /** Distância além do corpo em que uma parede é percebida (m). */
+  WALL_PROBE: 0.15,
+  /** Por quanto tempo a última parede é lembrada depois de desencostar (s). */
+  WALL_MEMORY: 0.15,
 });
 
 /** Câmera e mouse. */
