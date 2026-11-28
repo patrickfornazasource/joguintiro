@@ -135,6 +135,16 @@ export const MOVE = Object.freeze({
   SLAM_JUMP_PER_METER: 0.35,
   /** Pulo de slam: velocidade máxima para cima (m/s). */
   SLAM_JUMP_MAX: 20,
+  /** Dash (provisório, até a F2-12): velocidade horizontal durante o dash (m/s). */
+  DASH_SPEED: 18,
+  /** Duração do dash (s): sem gravidade nesse tempo. */
+  DASH_TIME: 0.15,
+  /** Cargas de dash. */
+  DASH_CHARGES: 3,
+  /** Tempo para recarregar uma carga de dash (s). */
+  DASH_RECHARGE: 1.2,
+  /** Fração da velocidade do dash mantida ao fim (0 a 1), se for maior que a de antes. */
+  DASH_END_SPEED_KEEP: 0.7,
 });
 
 /** Câmera e mouse. */
