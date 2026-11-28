@@ -71,6 +71,8 @@ export function createPlayer(spawn, cfg = MOVE) {
     sliding: false,
     /** Tempo até o próximo impulso de deslize valer (s). */
     slideCooldown: 0,
+    /** Há quanto tempo está deslizando (s); vai no evento slideEnd como `duration` (bônus de Carga, F2-01). */
+    slideTime: 0,
     /** Corrida na parede em andamento: { box, normal, time }, ou null (F1-12). */
     wallrun: null,
     /** Última parede em que correu e há quanto tempo saiu: { box, age }, ou null. */
@@ -325,7 +327,7 @@ export function capHorizontalSpeed(p, cfg = MOVE) {
 function endSlide(p) {
   if (!p.sliding) return;
   p.sliding = false;
-  p.events.push({ type: 'slideEnd' });
+  p.events.push({ type: 'slideEnd', duration: p.slideTime });
 }
 
 /**
@@ -347,8 +349,10 @@ function updateCrouch(p, input, map, jumping, dt, cfg) {
       p.vel.z *= k;
       p.slideCooldown = cfg.SLIDE_BOOST_COOLDOWN;
     }
+    p.slideTime = 0;
     p.events.push({ type: 'slideStart' });
   } else if (p.sliding) {
+    p.slideTime += dt;
     // Pulo no deslize (slide hop): sai com a velocidade do deslize (o passo do pulo não tem atrito).
     if (jumping || !p.onGround || !input.crouch || speed < cfg.CROUCH_SPEED) endSlide(p);
   }

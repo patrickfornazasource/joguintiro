@@ -38,7 +38,7 @@ Serve para testar outros valores de pulo, velocidade, deslize e afins sem mexer 
 
 1. **Abra o jogo no modo ajuste:** http://localhost:5173/?ajuste=1 (funciona junto com o mapa de treino: http://localhost:5173/?mapa=treino&ajuste=1).
 2. **Aperte F4** para abrir o painel (F4 de novo fecha). O mouse sai do jogo para você usar o painel.
-   - Os valores estão em grupos: Chão, Pulo, Ar, Deslize, Parede, Slam, Dash, Plataformas e Corrimão. Clique no nome do grupo para abrir.
+   - Os valores estão em grupos: Chão, Pulo, Ar, Deslize, Parede, Slam, Dash, Plataformas, Corrimão e Carga. Clique no nome do grupo para abrir.
    - Cada linha mostra o nome, a unidade (m/s, s, m...) e o valor padrão. Arraste a barra ou digite um número.
    - Cada controle vai de um quarto até o triplo do valor padrão. Valores em amarelo estão diferentes do padrão. O botão ↺ da linha volta aquele valor ao padrão.
 3. **Clique no jogo e teste.** A mudança vale na hora.
