@@ -125,6 +125,16 @@ export const MOVE = Object.freeze({
    * Evita "correr" na ponta estreita de uma parede fina (0,5 m) ao bater nela de frente.
    */
   WALLRUN_MIN_FACE: 1,
+  /** Golpe no chão (slam): velocidade de queda em linha reta (m/s). */
+  SLAM_SPEED: 40,
+  /** Janela para o pulo de slam depois de bater no chão (s). */
+  SLAM_JUMP_WINDOW: 0.2,
+  /** Pulo de slam: velocidade para cima base (m/s). */
+  SLAM_JUMP_BASE: 9,
+  /** Pulo de slam: velocidade extra por metro de queda do slam (m/s por m). */
+  SLAM_JUMP_PER_METER: 0.35,
+  /** Pulo de slam: velocidade máxima para cima (m/s). */
+  SLAM_JUMP_MAX: 20,
 });
 
 /** Câmera e mouse. */
@@ -141,6 +151,10 @@ export const VIEW = Object.freeze({
   WALLRUN_TILT: (10 * Math.PI) / 180,
   /** Rapidez com que a câmera inclina e desinclina (1/s). Só visual. */
   TILT_SMOOTH_RATE: 10,
+  /** Tremida da câmera ao bater o slam no chão: deslocamento máximo (m), para quedas de 10 m ou mais. */
+  SLAM_SHAKE: 0.08,
+  /** Duração da tremida do slam (s). */
+  SLAM_SHAKE_TIME: 0.25,
 });
 
 /** Rede. */

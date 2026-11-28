@@ -6,6 +6,23 @@ import { createPlayer, stepPlayer, emptyInput } from '../../shared/physics/playe
 import { createStepSmoother } from '../core/stepSmoothing.js';
 import { rightOf } from '../../shared/physics/move.js';
 
+/** Intensidade da tremida do slam (m): proporcional à altura da queda, até VIEW.SLAM_SHAKE em 10 m. */
+export function slamShakeAmplitude(height) {
+  return VIEW.SLAM_SHAKE * Math.min(1, Math.max(0, height) / 10);
+}
+
+/** Deslocamento da tremida: oscila rápido e some até o fim do tempo. Sem aleatório (repetível). */
+function shakeOffset(shake) {
+  if (shake.time <= 0 || shake.amp <= 0) return { x: 0, y: 0, z: 0 };
+  const fade = shake.time / VIEW.SLAM_SHAKE_TIME;
+  const t = shake.clock;
+  return {
+    x: shake.amp * fade * Math.sin(t * 97),
+    y: shake.amp * fade * Math.sin(t * 131 + 1),
+    z: shake.amp * fade * Math.sin(t * 113 + 2),
+  };
+}
+
 /**
  * Inclinação alvo da câmera (rad): correndo na parede, inclina para o lado oposto a ela,
  * proporcional a quanto a parede está de lado (de frente ou de costas não inclina).
@@ -88,6 +105,7 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
   let respawns = 0;
   let eyeHeight = PLAYER.EYE_HEIGHT; // altura do olho mostrada (suavizada ao agachar/levantar)
   let roll = 0; // inclinação da câmera (rad), suavizada (corrida na parede)
+  let shake = { time: 0, amp: 0, clock: 0 }; // tremida curta ao bater o slam (F1-14)
 
   function respawn() {
     player = createPlayer(spawn);
@@ -95,6 +113,7 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     smoother.reset();
     eyeHeight = PLAYER.EYE_HEIGHT;
     roll = 0;
+    shake = { time: 0, amp: 0, clock: 0 };
     yaw = spawn.yaw ?? 0;
     pitch = 0;
     respawns++;
@@ -132,6 +151,8 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       player.pitch = pitch;
       prev = { ...player.pos };
       stepPlayer(player, input, map, dt);
+      const land = player.events.find((e) => e.type === 'slamLand');
+      if (land) shake = { time: VIEW.SLAM_SHAKE_TIME, amp: slamShakeAmplitude(land.height), clock: 0 };
       if (player.pos.y < -PLAYER.RESPAWN_FALL_DEPTH) respawn();
     },
 
@@ -139,7 +160,15 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
      * Posição do olho para desenhar: interpola entre o passo anterior e o atual
      * (alpha de 0 a 1, vindo do laço) e suaviza a subida de degraus.
      */
+    /** Deslocamento atual da tremida do slam (m), para testes e para a câmera. */
+    get shakeOffset() {
+      return shakeOffset(shake);
+    },
+
     eye(alpha, frameDt) {
+      shake.time = Math.max(0, shake.time - Math.max(0, frameDt));
+      shake.clock += Math.max(0, frameDt);
+      const offset = shakeOffset(shake);
       const lerp = (a, b) => a + (b - a) * alpha;
       const feetY = smoother.update(lerp(prev.y, player.pos.y), player.onGround, frameDt);
       // Agachar/deslizar: a física muda a altura de uma vez; a câmera desce/sobe suavemente.
@@ -151,9 +180,9 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       roll += (tilt - roll) * (1 - Math.exp(-VIEW.TILT_SMOOTH_RATE * Math.max(0, frameDt)));
       if (Math.abs(tilt - roll) < 1e-5) roll = tilt;
       return {
-        x: lerp(prev.x, player.pos.x),
-        y: feetY + eyeHeight,
-        z: lerp(prev.z, player.pos.z),
+        x: lerp(prev.x, player.pos.x) + offset.x,
+        y: feetY + eyeHeight + offset.y,
+        z: lerp(prev.z, player.pos.z) + offset.z,
       };
     },
   };
