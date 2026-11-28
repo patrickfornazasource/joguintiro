@@ -186,6 +186,17 @@ test('navegador: teclas do jogo bloqueiam o padrão (Espaço, Tab, Ctrl); outras
   assert.equal(input.isDown('crouch'), true);
 });
 
+test('navegador: diagnóstico do mouse (F3) conta movimentos com e sem trava', () => {
+  const { win, canvas, input } = setup();
+  win.fire('mousemove', { movementX: 3, movementY: 1 });
+  assert.deepEqual(input.mouseStats, { locked: 0, unlocked: 1, last: { x: 0, y: 0 } });
+  canvas.fire('mousedown', { button: 0 });
+  win.fire('mousemove', { movementX: 7, movementY: -2 });
+  win.fire('mousemove', { movementX: -4, movementY: 5 });
+  assert.deepEqual(input.mouseStats, { locked: 2, unlocked: 1, last: { x: -4, y: 5 } });
+  assert.deepEqual(input.consumeMouseDelta(), { x: 3, y: 3 });
+});
+
 test('navegador: digitando num campo (painel de ajuste F4), as teclas são do campo, não do jogo', () => {
   const { win, input } = setup();
   for (const tagName of ['INPUT', 'TEXTAREA']) {
@@ -197,6 +208,18 @@ test('navegador: digitando num campo (painel de ajuste F4), as teclas são do ca
   assert.equal(input.isDown('forward'), false);
   win.fire('keydown', { code: 'KeyW', target: { tagName: 'CANVAS' } });
   assert.equal(input.isDown('forward'), true, 'fora de campos, vale para o jogo');
+});
+
+test('navegador: mouse com Shift e Ctrl segurados continua girando (dash, agachar)', () => {
+  const { win, canvas, input } = setup();
+  canvas.fire('mousedown', { button: 0 }); // trava
+  win.fire('keydown', { code: 'ShiftLeft', shiftKey: true });
+  win.fire('keydown', { code: 'ControlLeft', ctrlKey: true, shiftKey: true });
+  win.fire('mousemove', { movementX: 12, movementY: -6, shiftKey: true, ctrlKey: true });
+  win.fire('mousemove', { movementX: 8, movementY: 2, shiftKey: true, ctrlKey: true });
+  assert.deepEqual(input.consumeMouseDelta(), { x: 20, y: -4 });
+  assert.equal(input.isDown('dash'), true, 'Shift continua segurado');
+  assert.equal(input.isDown('crouch'), true, 'Ctrl continua segurado');
 });
 
 test('navegador: menu do botão direito bloqueado', () => {
