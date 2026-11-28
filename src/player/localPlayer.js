@@ -1,11 +1,12 @@
 // Jogador local: junta a entrada de cada passo, roda a física compartilhada e guarda
 // a posição anterior e a atual para a câmera interpolar entre passos.
 // Sem Three.js e sem DOM: testável no Node (a câmera é atualizada em main.js).
-import { PLAYER, VIEW } from '../../shared/constants.js';
+import { PLAYER, VIEW, MOVE } from '../../shared/constants.js';
 import { createPlayer, stepPlayer, emptyInput } from '../../shared/physics/player.js';
 import { createStepSmoother } from '../core/stepSmoothing.js';
 import { rightOf } from '../../shared/physics/move.js';
 import { CAMERA, HUD } from '../config/camera.js';
+import { isSolid } from '../../shared/physics/collide.js';
 
 /** Chave do localStorage para o campo de visão escolhido. */
 export const FOV_STORAGE_KEY = 'luzNegra.fov';
@@ -148,14 +149,33 @@ export function buildInput(keys, yaw, pitch) {
 }
 
 /**
- * Cria o jogador local.
- * @param {{ map: object, spawnIndex?: number, sensitivity?: number }} opts
+ * Retângulo (no plano) que cobre todas as caixas sólidas do mapa, paredes externas inclusive.
+ * Quem passa dele saiu do mapa. Mapa sem caixas: sem limite.
  */
-export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY, fovBase = CAMERA.FOV_BASE }) {
+export function mapArea(map) {
+  const solid = (map?.boxes ?? []).filter(isSolid);
+  if (!solid.length) return null;
+  return {
+    minX: Math.min(...solid.map((b) => b.min.x)),
+    maxX: Math.max(...solid.map((b) => b.max.x)),
+    minZ: Math.min(...solid.map((b) => b.min.z)),
+    maxZ: Math.max(...solid.map((b) => b.max.z)),
+  };
+}
+
+/**
+ * Cria o jogador local.
+ * @param {{ map: object, spawnIndex?: number, sensitivity?: number, fovBase?: number, move?: object }} opts
+ *   move: números do movimento (padrão MOVE). O painel de ajuste (F1-20) passa uma cópia
+ *   editável; mudar um valor nela vale no passo seguinte.
+ */
+export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY, fovBase = CAMERA.FOV_BASE, move = MOVE }) {
   let spawn = map.spawns[spawnIndex] ?? map.spawns[0];
   let lastGround = { x: spawn.x, z: spawn.z }; // último lugar onde pisou no chão
-  const smoother = createStepSmoother();
-  let player = createPlayer(spawn);
+  const smoother = createStepSmoother(move);
+  const area = mapArea(map);
+  let outOfMap = 0; // vezes que saiu do mapa e voltou (rede de segurança)
+  let player = createPlayer(spawn, move);
   let prev = { ...player.pos };
   let yaw = spawn.yaw ?? 0;
   let pitch = 0;
@@ -189,7 +209,7 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
   function respawn(at = nearestSpawn(lastGround.x, lastGround.z)) {
     spawn = at;
     lastGround = { x: at.x, z: at.z };
-    player = createPlayer(spawn);
+    player = createPlayer(spawn, move);
     prev = { ...player.pos };
     smoother.reset();
     eyeHeight = PLAYER.EYE_HEIGHT;
@@ -234,6 +254,12 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     get respawns() {
       return respawns;
     },
+    /** Vezes que passou das paredes externas e voltou para a estação (rede de segurança). */
+    get outOfMap() {
+      return outOfMap;
+    },
+    /** Números do movimento em uso (MOVE, ou a cópia do painel de ajuste). */
+    move,
     /** Volta ao ponto de nascimento (estação) mais perto de onde está agora (tecla R). */
     respawnNearest() {
       respawn(nearestSpawn(player.pos.x, player.pos.z));
@@ -254,7 +280,7 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       moveX = input.moveX;
       prev = { ...player.pos };
       const wasOnGround = player.onGround;
-      stepPlayer(player, input, map, dt);
+      stepPlayer(player, input, map, dt, move);
       // Afundamento ao pousar de alto (> 3 m): mede a queda desde o ponto mais alto no ar.
       if (!player.onGround) airPeak = Math.max(airPeak ?? player.pos.y, player.pos.y);
       if (player.onGround && !wasOnGround && airPeak !== null) {
@@ -269,6 +295,12 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
       const land = player.events.find((e) => e.type === 'slamLand');
       if (land) shake = { time: VIEW.SLAM_SHAKE_TIME, amp: slamShakeAmplitude(land.height), clock: 0 };
       if (player.pos.y < -PLAYER.RESPAWN_FALL_DEPTH) respawn();
+      // Rede de segurança (F1-20): com números extremos no painel de ajuste, um pulo pode passar
+      // por cima das paredes externas. Quem sai do mapa volta para a estação onde estava.
+      else if (area && (player.pos.x < area.minX || player.pos.x > area.maxX || player.pos.z < area.minZ || player.pos.z > area.maxZ)) {
+        outOfMap++;
+        respawn();
+      }
     },
 
     /**

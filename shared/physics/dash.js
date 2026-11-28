@@ -29,11 +29,11 @@ export function startDash(p, dir, speed, time) {
  * No passo em que o tempo acaba, aplica a velocidade de saída e termina.
  * @returns {boolean} true se o dash cuidou da velocidade neste passo
  */
-export function stepDash(p, dt) {
+export function stepDash(p, dt, cfg = MOVE) {
   const d = p.dash;
   if (!d) return false;
   if (d.remaining <= 1e-9) {
-    const keep = Math.max(d.before, d.speed * MOVE.DASH_END_SPEED_KEEP);
+    const keep = Math.max(d.before, d.speed * cfg.DASH_END_SPEED_KEEP);
     p.vel.x = d.dir.x * keep;
     p.vel.z = d.dir.z * keep;
     p.dash = null;
@@ -47,14 +47,14 @@ export function stepDash(p, dt) {
 }
 
 /** Recarrega uma carga a cada MOVE.DASH_RECHARGE segundos, até MOVE.DASH_CHARGES. */
-export function rechargeDash(p, dt) {
-  if (p.dashCharges >= MOVE.DASH_CHARGES) {
+export function rechargeDash(p, dt, cfg = MOVE) {
+  if (p.dashCharges >= cfg.DASH_CHARGES) {
     p.dashRecharge = 0;
     return;
   }
   p.dashRecharge += dt;
-  if (p.dashRecharge >= MOVE.DASH_RECHARGE - 1e-9) {
+  if (p.dashRecharge >= cfg.DASH_RECHARGE - 1e-9) {
     p.dashCharges += 1;
-    p.dashRecharge -= MOVE.DASH_RECHARGE;
+    p.dashRecharge -= cfg.DASH_RECHARGE;
   }
 }

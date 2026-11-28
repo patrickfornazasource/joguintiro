@@ -186,6 +186,19 @@ test('navegador: teclas do jogo bloqueiam o padrão (Espaço, Tab, Ctrl); outras
   assert.equal(input.isDown('crouch'), true);
 });
 
+test('navegador: digitando num campo (painel de ajuste F4), as teclas são do campo, não do jogo', () => {
+  const { win, input } = setup();
+  for (const tagName of ['INPUT', 'TEXTAREA']) {
+    const e = win.fire('keydown', { code: 'Digit1', target: { tagName } });
+    assert.equal(e.defaultPrevented, false, `${tagName}: o número entra no campo`);
+    win.fire('keydown', { code: 'KeyW', target: { tagName } });
+  }
+  assert.equal(input.isDown('weapon1'), false);
+  assert.equal(input.isDown('forward'), false);
+  win.fire('keydown', { code: 'KeyW', target: { tagName: 'CANVAS' } });
+  assert.equal(input.isDown('forward'), true, 'fora de campos, vale para o jogo');
+});
+
 test('navegador: menu do botão direito bloqueado', () => {
   const { canvas } = setup();
   assert.equal(canvas.fire('contextmenu').defaultPrevented, true);

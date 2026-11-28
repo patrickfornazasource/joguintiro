@@ -78,10 +78,10 @@ function blocked(p, boxes) {
  * Só vale se todos têm o topo até MOVE.STEP_HEIGHT acima dos pés e se o jogador
  * cabe em cima. Devolve true se subiu.
  */
-function tryStepUp(p, boxes, hits) {
+function tryStepUp(p, boxes, hits, cfg) {
   const top = Math.max(...hits.map((b) => b.max.y));
   const rise = top - p.pos.y;
-  if (!(rise > 0 && rise <= MOVE.STEP_HEIGHT)) return false;
+  if (!(rise > 0 && rise <= cfg.STEP_HEIGHT)) return false;
   const oldY = p.pos.y;
   p.pos.y = top;
   if (blocked(p, boxes)) {
@@ -100,7 +100,7 @@ function tryStepUp(p, boxes, hits) {
  * Move num eixo e empurra para fora de qualquer caixa atravessada. Devolve true se bateu.
  * @param {boolean} canStep pode subir degraus (estava no chão)
  */
-function moveAxis(p, boxes, axis, delta, canStep) {
+function moveAxis(p, boxes, axis, delta, canStep, cfg) {
   if (delta === 0) return false;
   p.pos[axis] += delta;
   const dir = Math.sign(delta);
@@ -109,7 +109,7 @@ function moveAxis(p, boxes, axis, delta, canStep) {
   if (axis !== 'y' && canStep) {
     const pb = playerBox(p);
     const hits = boxes.filter((b) => overlaps(pb, b));
-    if (hits.length && tryStepUp(p, boxes, hits)) return false;
+    if (hits.length && tryStepUp(p, boxes, hits, cfg)) return false;
   }
 
   let hit = false;
@@ -141,8 +141,9 @@ function moveAxis(p, boxes, axis, delta, canStep) {
  * @param {object} p jogador (shared/physics/player.js)
  * @param {{ boxes: Array }} map
  * @param {number} dt (s)
+ * @param {typeof MOVE} [cfg] números do movimento (padrão: MOVE; o painel de ajuste passa uma cópia)
  */
-export function moveAndCollide(p, map, dt) {
+export function moveAndCollide(p, map, dt, cfg = MOVE) {
   const wasOnGround = p.onGround;
   p.onGround = false;
   p.groundType = null;
@@ -160,7 +161,7 @@ export function moveAndCollide(p, map, dt) {
       // Depois de bater num eixo, para de andar nele no resto deste passo.
       // Degraus só andando: estava no chão no passo anterior ou pousou/subiu neste.
       const canStep = (wasOnGround || p.onGround) && p.vel.y <= 0;
-      if (moveAxis(p, boxes, axis, part[axis], canStep)) part[axis] = 0;
+      if (moveAxis(p, boxes, axis, part[axis], canStep, cfg)) part[axis] = 0;
     }
   }
   return p;

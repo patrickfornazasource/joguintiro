@@ -32,6 +32,23 @@ Você só precisa fazer os passos 1 a 3 uma vez.
 
 Da próxima vez, basta repetir os passos 3 (só a parte de abrir o terminal), 4 e 5. Se o projeto tiver sido atualizado, baixe de novo (passo 2) e rode `npm install` outra vez.
 
+## Ajustar os números do movimento (painel F4)
+
+Serve para testar outros valores de pulo, velocidade, deslize e afins sem mexer no código.
+
+1. **Abra o jogo no modo ajuste:** http://localhost:5173/?ajuste=1 (funciona junto com o mapa de treino: http://localhost:5173/?mapa=treino&ajuste=1).
+2. **Aperte F4** para abrir o painel (F4 de novo fecha). O mouse sai do jogo para você usar o painel.
+   - Os valores estão em grupos: Chão, Pulo, Ar, Deslize, Parede, Slam, Dash, Plataformas e Corrimão. Clique no nome do grupo para abrir.
+   - Cada linha mostra o nome, a unidade (m/s, s, m...) e o valor padrão. Arraste a barra ou digite um número.
+   - Cada controle vai de um quarto até o triplo do valor padrão. Valores em amarelo estão diferentes do padrão. O botão ↺ da linha volta aquele valor ao padrão.
+3. **Clique no jogo e teste.** A mudança vale na hora.
+4. **Botões do alto do painel:**
+   - **Restaurar padrão:** todos os valores voltam ao original;
+   - **Salvar neste navegador:** os valores continuam quando você abrir o jogo de novo com `?ajuste=1`;
+   - **Copiar valores:** copia um texto com o que você mudou (e o padrão de cada um). **Cole esse texto na conversa** para que os valores entrem no jogo de verdade.
+
+Sem `?ajuste=1` no endereço, o painel não aparece e o jogo usa sempre os valores padrão. Se algum valor extremo jogar você por cima das paredes do mapa, você volta sozinho para a estação mais perto.
+
 ## Documentos
 
 | Documento | Para quê |

@@ -6,10 +6,13 @@ import { MOVE } from '../../shared/constants.js';
 
 /**
  * Cria o suavizador.
- * @param {number} [rate] rapidez (1/s), padrão MOVE.STEP_SMOOTH_RATE
+ * @param {number|object} [rate] rapidez (1/s), padrão MOVE.STEP_SMOOTH_RATE. Também aceita um
+ *   objeto de números do movimento (ex.: o do painel de ajuste, F1-20): aí lê STEP_SMOOTH_RATE e
+ *   STEP_HEIGHT dele a cada quadro, e um ajuste ao vivo vale na hora.
  * @param {number} [maxStep] maior subida tratada como degrau (m), padrão MOVE.STEP_HEIGHT
  */
 export function createStepSmoother(rate = MOVE.STEP_SMOOTH_RATE, maxStep = MOVE.STEP_HEIGHT) {
+  const cfg = typeof rate === 'object' && rate !== null ? rate : null;
   let lastY = null;
   let offset = 0; // quanto a imagem está abaixo da física (m, negativo)
 
@@ -21,13 +24,15 @@ export function createStepSmoother(rate = MOVE.STEP_SMOOTH_RATE, maxStep = MOVE.
      * @param {number} dt tempo desde o último quadro (s)
      */
     update(feetY, onGround, dt) {
+      const r = cfg ? cfg.STEP_SMOOTH_RATE : rate;
+      const most = cfg ? cfg.STEP_HEIGHT : maxStep;
       if (lastY !== null) {
         const rise = feetY - lastY;
         // Subida instantânea no chão do tamanho de um degrau: esconder o salto.
-        if (onGround && rise > 0 && rise <= maxStep + 1e-6) offset -= rise;
+        if (onGround && rise > 0 && rise <= most + 1e-6) offset -= rise;
       }
       lastY = feetY;
-      offset *= Math.exp(-rate * Math.max(0, dt));
+      offset *= Math.exp(-r * Math.max(0, dt));
       if (Math.abs(offset) < 1e-4) offset = 0;
       return feetY + offset;
     },

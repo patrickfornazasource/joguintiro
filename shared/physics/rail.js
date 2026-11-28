@@ -42,14 +42,14 @@ function placeOnRail(p) {
  *   rodar a física normal), 'jumped' pulou para fora neste passo, 'released' soltou agachando
  *   neste passo, null fora do trilho
  */
-export function updateRail(p, input, map, dt) {
+export function updateRail(p, input, map, dt, cfg = MOVE) {
   if (p.railLast) p.railLast.age += dt;
 
   if (p.rail) {
     const r = p.rail;
     if (input.jumpPressed) {
       // Pulo: sai para cima, mantendo a velocidade ao longo do trilho na horizontal.
-      p.vel = { x: r.t.x * r.v, y: MOVE.RAIL_EXIT_UP, z: r.t.z * r.v };
+      p.vel = { x: r.t.x * r.v, y: cfg.RAIL_EXIT_UP, z: r.t.z * r.v };
       p.coyote = 0;
       p.jumpBuffer = 0;
       endRail(p, 'jump');
@@ -60,8 +60,8 @@ export function updateRail(p, input, map, dt) {
       return 'released'; // o aperto de agachar já foi usado: não vira golpe no chão neste passo
     }
     // Gravidade projetada: acelera descendo, freia subindo (v com sinal: + em direção a `to`).
-    r.v -= MOVE.RAIL_GRAVITY_ACCEL * r.t.y * dt;
-    r.v = Math.max(-MOVE.RAIL_MAX_SPEED, Math.min(MOVE.RAIL_MAX_SPEED, r.v));
+    r.v -= cfg.RAIL_GRAVITY_ACCEL * r.t.y * dt;
+    r.v = Math.max(-cfg.RAIL_MAX_SPEED, Math.min(cfg.RAIL_MAX_SPEED, r.v));
     r.s += r.v * dt;
     if (r.s < 0 || r.s > r.len) {
       r.s = Math.max(0, Math.min(r.len, r.s));
@@ -79,19 +79,19 @@ export function updateRail(p, input, map, dt) {
   if (p.onGround && !p.sliding) return null; // no chão, só deslizando
   for (const b of map?.boxes ?? []) {
     if (b.type !== T.RAIL) continue;
-    if (p.railLast && p.railLast.box === b && p.railLast.age < MOVE.RAIL_REATTACH_DELAY) continue;
+    if (p.railLast && p.railLast.box === b && p.railLast.age < cfg.RAIL_REATTACH_DELAY) continue;
     const seg = railSegment(b);
     const c = closest(seg, p.pos);
-    if (c.dist > MOVE.RAIL_SNAP_DIST) continue;
+    if (c.dist > cfg.RAIL_SNAP_DIST) continue;
     // No ar, por baixo do trilho não gruda. Deslizando no chão, basta estar perto (trilho baixo).
     if (!p.onGround && p.pos.y < c.point.y - 0.2) continue;
     const along = dot(p.vel, c.t);
-    if (Math.abs(along) < MOVE.RAIL_MIN_SPEED) continue; // precisa vir a favor do trilho
+    if (Math.abs(along) < cfg.RAIL_MIN_SPEED) continue; // precisa vir a favor do trilho
     if (p.sliding) {
       p.sliding = false;
       p.events.push({ type: 'slideEnd' });
     }
-    p.rail = { box: b, from: seg.from, t: c.t, len: c.len, s: c.s, v: Math.min(Math.abs(along), MOVE.RAIL_MAX_SPEED) * Math.sign(along) };
+    p.rail = { box: b, from: seg.from, t: c.t, len: c.len, s: c.s, v: Math.min(Math.abs(along), cfg.RAIL_MAX_SPEED) * Math.sign(along) };
     placeOnRail(p);
     p.onGround = false;
     p.events.push({ type: 'railStart' });

@@ -35,10 +35,10 @@ export function sideOf(yaw, toWall) {
  * @returns {{ normal: {x,y,z}, type: string, side: 'left'|'right'|'front'|'back', distance: number } | null}
  *   normal aponta da parede para o jogador; side é relativo ao olhar.
  */
-export function detectWall(p, map) {
+export function detectWall(p, map, cfg = MOVE) {
   const r = PLAYER.RADIUS;
   const eps = PHYSICS.CONTACT_EPSILON;
-  const yMin = p.pos.y + MOVE.STEP_HEIGHT;
+  const yMin = p.pos.y + cfg.STEP_HEIGHT;
   const yMax = p.pos.y + p.height;
   let best = null;
 
@@ -54,7 +54,7 @@ export function detectWall(p, map) {
       if (!(b.min[other] < p.pos[other] + r - eps && b.max[other] > p.pos[other] - r + eps)) continue;
       // Distância entre a face do corpo e a face da caixa, nesta direção.
       const distance = sign > 0 ? b.min[axis] - (p.pos[axis] + r) : p.pos[axis] - r - b.max[axis];
-      if (distance < -eps || distance > MOVE.WALL_PROBE) continue;
+      if (distance < -eps || distance > cfg.WALL_PROBE) continue;
       if (best && distance >= best.distance) continue;
       const toWall = { x: axis === 'x' ? sign : 0, y: 0, z: axis === 'z' ? sign : 0 };
       best = {
@@ -74,15 +74,15 @@ export function detectWall(p, map) {
  * MOVE.WALL_MEMORY segundos depois de desencostar (tolerância para o pulo na parede).
  * Preenche p.wall ({ ..., age } ou null) e p.wallAge (s desde o último contato).
  */
-export function updateWall(p, map, dt) {
-  const now = detectWall(p, map);
+export function updateWall(p, map, dt, cfg = MOVE) {
+  const now = detectWall(p, map, cfg);
   if (now) {
     p.wall = { ...now, age: 0 };
     p.wallAge = 0;
     return p.wall;
   }
   p.wallAge = (p.wallAge ?? Infinity) + dt;
-  if (p.wall && p.wallAge <= MOVE.WALL_MEMORY + 1e-9) {
+  if (p.wall && p.wallAge <= cfg.WALL_MEMORY + 1e-9) {
     // Lado recalculado com o olhar atual (a normal não muda; o lado depende de para onde olha).
     const toWall = { x: -p.wall.normal.x, y: 0, z: -p.wall.normal.z };
     p.wall = { ...p.wall, age: p.wallAge, side: sideOf(p.yaw ?? 0, toWall) };

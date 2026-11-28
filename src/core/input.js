@@ -166,6 +166,9 @@ export function attachInput({ canvas, target = window, doc = document, bindings 
   };
 
   const onKeyDown = (e) => {
+    // Digitando num campo (ex.: número no painel de ajuste F4): a tecla é do campo, não do jogo.
+    const tag = e.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
     syncModifiers(e);
     const code = resolveCode(e);
     lastKey = { code: e.code, key: e.key };

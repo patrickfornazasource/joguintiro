@@ -1,7 +1,8 @@
 // Captura de tela automática do jogo.
-// Uso: npm run shot [-- --url-params "?mapa=treino"] [-- --out nome.png] [-- --sem-clique]
+// Uso: npm run shot [-- --url-params "?mapa=treino"] [-- --out nome.png] [-- --sem-clique] [-- --tecla F4]
 // Por padrão, clica no jogo antes da foto (como uma pessoa: a tela "Clique para jogar" some).
-// Com --sem-clique, fotografa a tela inicial.
+// Com --sem-clique, fotografa a tela inicial. --tecla aperta uma tecla antes da foto (pode repetir),
+// ex.: --tecla F4 abre o painel de ajuste (com ?ajuste=1).
 // 1. Faz o build. 2. Sobe o vite preview numa porta livre.
 // 3. Abre a página em 1280x720 e espera window.__READY === true (até 10 s).
 // 4. Salva a imagem em artifacts/ e encerra tudo.
@@ -19,13 +20,14 @@ const VIEWPORT = { width: 1280, height: 720 };
 const CLICK_SETTLE_MS = 400; // depois do clique, tempo para a tela inicial sumir e a imagem assentar
 
 function parseArgs(argv) {
-  const opts = { urlParams: '', out: 'shot.png', click: true };
+  const opts = { urlParams: '', out: 'shot.png', click: true, keys: [] };
   for (let i = 0; i < argv.length; i++) {
     const [key, inline] = argv[i].split(/=(.*)/s);
     const value = () => (inline !== undefined ? inline : argv[++i]);
     if (key === '--url-params') opts.urlParams = value() ?? '';
     else if (key === '--out') opts.out = value() ?? opts.out;
     else if (key === '--sem-clique') opts.click = false;
+    else if (key === '--tecla') opts.keys.push(value());
     else throw new Error(`Opção desconhecida: ${argv[i]}`);
   }
   if (opts.urlParams && !opts.urlParams.startsWith('?')) opts.urlParams = `?${opts.urlParams}`;
@@ -100,6 +102,10 @@ async function main() {
     if (opts.click) {
       // Clica no centro para entrar no jogo (some a tela inicial) e espera alguns quadros.
       await page.mouse.click(VIEWPORT.width / 2, VIEWPORT.height / 2);
+      await page.waitForTimeout(CLICK_SETTLE_MS);
+    }
+    for (const k of opts.keys) {
+      await page.keyboard.press(k);
       await page.waitForTimeout(CLICK_SETTLE_MS);
     }
 

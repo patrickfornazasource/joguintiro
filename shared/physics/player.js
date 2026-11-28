@@ -40,8 +40,9 @@ export function emptyInput() {
 /**
  * Cria o estado de um jogador num ponto de nascimento.
  * @param {{ x: number, y: number, z: number, yaw?: number }} spawn
+ * @param {typeof MOVE} [cfg] números do movimento (padrão: MOVE)
  */
-export function createPlayer(spawn) {
+export function createPlayer(spawn, cfg = MOVE) {
   return {
     /** Posição dos pés (m). */
     pos: { x: spawn.x, y: spawn.y, z: spawn.z },
@@ -95,7 +96,7 @@ export function createPlayer(spawn) {
     /** Pulos extras disponíveis no ar (pulo duplo, F1-09). */
     jumpsLeft: 0,
     /** Pulos na parede ainda disponíveis (F1-13). Recarregam no chão ou ao correr numa parede. */
-    wallJumpsLeft: MOVE.WALL_JUMP_MAX,
+    wallJumpsLeft: cfg.WALL_JUMP_MAX,
     /** Último pulo na parede: { box, age } (para a espera da mesma parede), ou null. */
     lastWallJump: null,
     /**
@@ -106,7 +107,7 @@ export function createPlayer(spawn) {
     /** Tempo desde o último contato com parede (s). */
     wallAge: Infinity,
     /** Cargas de dash disponíveis (F1-15). */
-    dashCharges: MOVE.DASH_CHARGES,
+    dashCharges: cfg.DASH_CHARGES,
     /** Tempo acumulado para recarregar a próxima carga de dash (s). */
     dashRecharge: 0,
     /** Dash em andamento: { dir, speed, remaining, before }, ou null. */
@@ -125,21 +126,23 @@ export function createPlayer(spawn) {
  * @param {ReturnType<typeof emptyInput>} input entrada deste passo
  * @param {{ boxes: Array }} map mapa (shared/maps)
  * @param {number} dt duração do passo (s), normalmente PHYSICS.FIXED_DT
+ * @param {typeof MOVE} [cfg] números do movimento (F1-20). Padrão: MOVE (congelado). O painel de
+ *   ajuste (F4) passa uma cópia editável; a física continua pura (só lê os números daqui).
  * @returns o mesmo objeto p
  */
-export function stepPlayer(p, input, map, dt) {
+export function stepPlayer(p, input, map, dt, cfg = MOVE) {
   p.events = [];
 
   // Relógios do pulo (F1-07): tolerância de borda e pulo antecipado.
-  p.coyote = p.onGround ? MOVE.COYOTE_TIME : Math.max(0, p.coyote - dt);
-  p.jumpBuffer = input.jumpPressed ? MOVE.JUMP_BUFFER : Math.max(0, p.jumpBuffer - dt);
+  p.coyote = p.onGround ? cfg.COYOTE_TIME : Math.max(0, p.coyote - dt);
+  p.jumpBuffer = input.jumpPressed ? cfg.JUMP_BUFFER : Math.max(0, p.jumpBuffer - dt);
 
   // Pula se: está no chão (ou acabou de sair da borda) E apertou agora ou há pouco,
   // ou está no chão segurando o pulo (bunny hop: pula de novo ao pousar).
   // Corrida na parede (F1-12): entrar, continuar, sair ou pular para fora. Tem prioridade.
   // Corrimão (F1-17): no trilho, a posição é dele (sem a física normal neste passo).
-  rechargeDash(p, dt);
-  const railing = updateRail(p, input, map, dt); // 'riding' | 'jumped' | 'released' | null
+  rechargeDash(p, dt, cfg);
+  const railing = updateRail(p, input, map, dt, cfg); // 'riding' | 'jumped' | 'released' | null
   if (railing === 'riding') {
     p.state = 'rail';
     return p;
@@ -153,11 +156,11 @@ export function stepPlayer(p, input, map, dt) {
     const len = Math.hypot(w.x, w.z);
     const dashDir = len > 0 ? { x: w.x / len, y: 0, z: w.z / len } : forwardOf(input.yaw); // sem tecla: para frente
     p.dashCharges -= 1;
-    startDash(p, dashDir, MOVE.DASH_SPEED, MOVE.DASH_TIME);
+    startDash(p, dashDir, cfg.DASH_SPEED, cfg.DASH_TIME);
   }
-  const dashing = stepDash(p, dt); // durante o dash, a velocidade é dele
+  const dashing = stepDash(p, dt, cfg); // durante o dash, a velocidade é dele
 
-  const wallrunning = dashing || railJumped ? null : updateWallrun(p, input, dt); // 'running' | 'jumped' | null
+  const wallrunning = dashing || railJumped ? null : updateWallrun(p, input, dt, cfg); // 'running' | 'jumped' | null
   // Pulo do trilho conta como "já cuidado" neste passo (como o pulo da corrida na parede).
   const onWall = wallrunning !== null || railJumped;
 
@@ -175,20 +178,20 @@ export function stepPlayer(p, input, map, dt) {
 
   // Pulo na parede (F1-13): no ar, fora da corrida, encostado (ou na memória de 0,15 s) numa
   // parede, com um aperto novo. Tem prioridade sobre o pulo duplo. Máximo WALL_JUMP_MAX seguidos.
-  if (p.onGround) p.wallJumpsLeft = MOVE.WALL_JUMP_MAX;
+  if (p.onGround) p.wallJumpsLeft = cfg.WALL_JUMP_MAX;
   if (p.lastWallJump) p.lastWallJump.age += dt;
   const sameWallTooSoon = p.wall && p.lastWallJump && p.lastWallJump.box === p.wall.box
-    && p.lastWallJump.age < MOVE.WALL_JUMP_SAME_WALL_DELAY;
+    && p.lastWallJump.age < cfg.WALL_JUMP_SAME_WALL_DELAY;
   const wallJumping = !dashing && !onWall && !p.slam && !jumping && !p.onGround && input.jumpPressed
     && p.wall !== null && !sameWallTooSoon && p.wallJumpsLeft > 0;
 
   // Pulo duplo (F1-09): recarrega no chão (e ao entrar na parede); no ar, só com um aperto novo.
-  if (p.onGround) p.jumpsLeft = MOVE.AIR_JUMPS;
+  if (p.onGround) p.jumpsLeft = cfg.AIR_JUMPS;
   const doubleJumping = !dashing && !onWall && !p.slam && !jumping && !wallJumping && !p.onGround && input.jumpPressed
     && p.jumpsLeft > 0;
 
   // Deslize e agachar (F1-10).
-  updateCrouch(p, input, map, jumping, dt);
+  updateCrouch(p, input, map, jumping, dt, cfg);
 
   // No chão (estado do passo anterior): atrito e aceleração na direção das teclas (F1-06).
   // No passo do pulo não há atrito: quem emenda pulos não perde velocidade.
@@ -204,9 +207,9 @@ export function stepPlayer(p, input, map, dt) {
     // Empurra para longe da parede e para cima, mantendo a velocidade ao longo dela.
     const n = p.wall.normal;
     const into = p.vel.x * n.x + p.vel.z * n.z;
-    p.vel.x = p.vel.x - into * n.x + n.x * MOVE.WALL_JUMP_OUT;
-    p.vel.z = p.vel.z - into * n.z + n.z * MOVE.WALL_JUMP_OUT;
-    p.vel.y = MOVE.WALL_JUMP_UP;
+    p.vel.x = p.vel.x - into * n.x + n.x * cfg.WALL_JUMP_OUT;
+    p.vel.z = p.vel.z - into * n.z + n.z * cfg.WALL_JUMP_OUT;
+    p.vel.y = cfg.WALL_JUMP_UP;
     p.wallJumpsLeft -= 1;
     p.jumpBuffer = 0;
     p.coyote = 0;
@@ -218,20 +221,20 @@ export function stepPlayer(p, input, map, dt) {
     p.events.push({ type: 'wallJump' });
   } else if (p.slam) {
     // Slam: despenca em linha reta, sem velocidade horizontal e sem controle.
-    p.vel = { x: 0, y: -MOVE.SLAM_SPEED, z: 0 };
+    p.vel = { x: 0, y: -cfg.SLAM_SPEED, z: 0 };
   } else if (p.sliding && !jumping) {
     // Deslize: atrito baixo e sem aceleração pelas teclas, só um leve direcionamento.
-    const v = applyFriction(p.vel, MOVE.SLIDE_FRICTION, 0, dt);
-    p.vel = redirectHorizontal(v, dir, Math.min(1, MOVE.SLIDE_STEER * dt));
+    const v = applyFriction(p.vel, cfg.SLIDE_FRICTION, 0, dt);
+    p.vel = redirectHorizontal(v, dir, Math.min(1, cfg.SLIDE_STEER * dt));
   } else if (p.onGround || jumping) {
-    const v = jumping ? { ...p.vel } : applyFriction(p.vel, MOVE.FRICTION, MOVE.STOP_SPEED, dt);
-    const target = p.crouching ? MOVE.CROUCH_SPEED : MOVE.WALK_SPEED; // agachado anda devagar
-    p.vel = dir ? accelerate(v, dir, target * amount, MOVE.GROUND_ACCEL, dt) : v;
+    const v = jumping ? { ...p.vel } : applyFriction(p.vel, cfg.FRICTION, cfg.STOP_SPEED, dt);
+    const target = p.crouching ? cfg.CROUCH_SPEED : cfg.WALK_SPEED; // agachado anda devagar
+    p.vel = dir ? accelerate(v, dir, target * amount, cfg.GROUND_ACCEL, dt) : v;
   } else if (doubleJumping) {
     // Mistura a direção atual com a das teclas, sem perder velocidade.
-    p.vel = redirectHorizontal(p.vel, dir, MOVE.DOUBLE_JUMP_REDIRECT);
+    p.vel = redirectHorizontal(p.vel, dir, cfg.DOUBLE_JUMP_REDIRECT);
   } else if (dir) {
-    p.vel = airAccelerate(p.vel, dir, MOVE.WALK_SPEED * amount, MOVE.AIR_ACCEL, MOVE.AIR_WISH_CAP, dt);
+    p.vel = airAccelerate(p.vel, dir, cfg.WALK_SPEED * amount, cfg.AIR_ACCEL, cfg.AIR_WISH_CAP, dt);
   }
 
   if (jumping) {
@@ -240,17 +243,17 @@ export function stepPlayer(p, input, map, dt) {
     p.jumpBuffer = 0;
     if (p.slamJumpWindow > 0) {
       // Pulo de slam: mais alto quanto maior a queda do slam, até SLAM_JUMP_MAX.
-      p.vel.y = Math.min(MOVE.SLAM_JUMP_BASE + p.slamHeight * MOVE.SLAM_JUMP_PER_METER, MOVE.SLAM_JUMP_MAX);
+      p.vel.y = Math.min(cfg.SLAM_JUMP_BASE + p.slamHeight * cfg.SLAM_JUMP_PER_METER, cfg.SLAM_JUMP_MAX);
       p.slamJumpWindow = 0;
       p.events.push({ type: 'slamJump', height: p.slamHeight });
     } else {
-      p.vel.y = MOVE.JUMP_SPEED;
+      p.vel.y = cfg.JUMP_SPEED;
       p.events.push({ type: 'jump' });
     }
   }
 
   if (doubleJumping) {
-    p.vel.y = MOVE.DOUBLE_JUMP_SPEED;
+    p.vel.y = cfg.DOUBLE_JUMP_SPEED;
     p.jumpsLeft -= 1;
     p.jumpBuffer = 0; // o aperto foi usado no pulo duplo: não vale como pulo antecipado no pouso
     p.events.push({ type: 'doubleJump' });
@@ -261,19 +264,19 @@ export function stepPlayer(p, input, map, dt) {
   // Dash no chão: a gravidade continua (o chão a anula), para seguir pisando: sobe degraus
   // e pisa em plataformas de salto durante o arranco. No ar, o dash não perde altura.
   const airDash = dashing && !p.onGround;
-  capHorizontalSpeed(p); // limite absoluto (F1-18)
-  stepBody(p, map, dt, airDash || p.slam ? 0 : p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
-  updateWall(p, map, dt); // detector de parede (F1-11)
+  capHorizontalSpeed(p, cfg); // limite absoluto (F1-18)
+  stepBody(p, map, dt, airDash || p.slam ? 0 : p.wallrun ? cfg.WALLRUN_GRAVITY_SCALE : 1, cfg);
+  updateWall(p, map, dt, cfg); // detector de parede (F1-11)
   if (p.wallrun && p.onGround) endWallrun(p);
   if (p.slam && p.onGround) {
     // Bateu: registra a altura da queda e abre a janela do pulo de slam.
     const height = Math.max(0, p.slam.startY - p.pos.y);
     p.slam = null;
     p.slamHeight = height;
-    p.slamJumpWindow = MOVE.SLAM_JUMP_WINDOW;
+    p.slamJumpWindow = cfg.SLAM_JUMP_WINDOW;
     p.events.push({ type: 'slamLand', height });
   }
-  if (p.onGround && p.groundType === BOX_TYPES.PAD) launchFromPad(p, p.groundBox);
+  if (p.onGround && p.groundType === BOX_TYPES.PAD) launchFromPad(p, p.groundBox, cfg);
   p.state = dashing ? 'dash' : p.slam ? 'slam' : p.wallrun ? 'wallrun' : p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
   return p;
 }
@@ -283,24 +286,24 @@ export function stepPlayer(p, input, map, dt) {
  * a velocidade vira exatamente essa; sem ele, sobe a MOVE.PAD_SPEED mantendo a horizontal.
  * Conta como tocar o chão: recarrega pulo duplo e pulos na parede.
  */
-function launchFromPad(p, pad) {
+function launchFromPad(p, pad, cfg) {
   if (pad && pad.launch) p.vel = { x: pad.launch.x, y: pad.launch.y, z: pad.launch.z };
-  else p.vel.y = MOVE.PAD_SPEED;
+  else p.vel.y = cfg.PAD_SPEED;
   p.onGround = false;
   p.coyote = 0;
   p.dash = null; // o lançamento vence um dash em andamento
   endSlide(p); // termina um deslize em andamento
-  p.jumpsLeft = MOVE.AIR_JUMPS;
-  p.wallJumpsLeft = MOVE.WALL_JUMP_MAX;
+  p.jumpsLeft = cfg.AIR_JUMPS;
+  p.wallJumpsLeft = cfg.WALL_JUMP_MAX;
   p.wallsUsed = [];
   p.events.push({ type: 'pad', launch: { ...p.vel } });
 }
 
 /** Limita a velocidade horizontal a MOVE.MAX_SPEED, mantendo a direção (F1-18). */
-export function capHorizontalSpeed(p) {
+export function capHorizontalSpeed(p, cfg = MOVE) {
   const h = Math.hypot(p.vel.x, p.vel.z);
-  if (h > MOVE.MAX_SPEED) {
-    const k = MOVE.MAX_SPEED / h;
+  if (h > cfg.MAX_SPEED) {
+    const k = cfg.MAX_SPEED / h;
     p.vel.x *= k;
     p.vel.z *= k;
   }
@@ -319,23 +322,23 @@ function endSlide(p) {
  * - Deslizando: termina abaixo de CROUCH_SPEED (vira agachado), soltando a tecla, pulando ou saindo do chão.
  * - Agachado com a tecla solta: levanta só se couber em pé.
  */
-function updateCrouch(p, input, map, jumping, dt) {
+function updateCrouch(p, input, map, jumping, dt, cfg) {
   p.slideCooldown = Math.max(0, p.slideCooldown - dt);
   const speed = Math.hypot(p.vel.x, p.vel.z);
 
-  if (p.onGround && !jumping && input.crouchPressed && !p.sliding && speed > MOVE.SLIDE_MIN_SPEED) {
+  if (p.onGround && !jumping && input.crouchPressed && !p.sliding && speed > cfg.SLIDE_MIN_SPEED) {
     p.sliding = true;
     p.crouching = true;
     if (p.slideCooldown === 0) {
-      const k = (speed + MOVE.SLIDE_BOOST) / speed;
+      const k = (speed + cfg.SLIDE_BOOST) / speed;
       p.vel.x *= k;
       p.vel.z *= k;
-      p.slideCooldown = MOVE.SLIDE_BOOST_COOLDOWN;
+      p.slideCooldown = cfg.SLIDE_BOOST_COOLDOWN;
     }
     p.events.push({ type: 'slideStart' });
   } else if (p.sliding) {
     // Pulo no deslize (slide hop): sai com a velocidade do deslize (o passo do pulo não tem atrito).
-    if (jumping || !p.onGround || !input.crouch || speed < MOVE.CROUCH_SPEED) endSlide(p);
+    if (jumping || !p.onGround || !input.crouch || speed < cfg.CROUCH_SPEED) endSlide(p);
   }
 
   if (input.crouch && p.onGround && !jumping) p.crouching = true;
@@ -351,17 +354,17 @@ function updateCrouch(p, input, map, jumping, dt) {
  * Parte do passo que não depende da entrada: gravidade e colisão com o mapa.
  * Separada para testar a colisão sem as regras de movimento.
  */
-export function stepBody(p, map, dt, gravityScale = 1) {
+export function stepBody(p, map, dt, gravityScale = 1, cfg = MOVE) {
   // Gravidade sempre puxa, sem passar da velocidade máxima de queda. No chão, a colisão
   // zera a queda a cada passo; assim onGround fica estável (não pisca entre passos).
   // gravityScale < 1 reduz a gravidade (corrida na parede, F1-12).
   const before = p.vel.y;
-  const after = Math.max(before - MOVE.GRAVITY * gravityScale * dt, -MOVE.MAX_FALL_SPEED);
+  const after = Math.max(before - cfg.GRAVITY * gravityScale * dt, -cfg.MAX_FALL_SPEED);
   // Na vertical, a posição anda pela média da velocidade no passo (exato para gravidade
   // constante): a altura do pulo bate com a fórmula v² / 2g (F1-07).
   const average = (before + after) / 2;
   p.vel.y = average;
-  moveAndCollide(p, map, dt); // para nas caixas do mapa (F1-03)
+  moveAndCollide(p, map, dt, cfg); // para nas caixas do mapa (F1-03)
   // Se nada zerou a velocidade vertical (chão, teto, degrau), ela termina o passo em `after`.
   if (p.vel.y === average) p.vel.y = after;
   return p;
