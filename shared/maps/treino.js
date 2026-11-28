@@ -12,7 +12,7 @@ const WALL_HEIGHT = 20; // paredes externas: bem acima de tudo que dá para alca
 const WALL_BELOW = 40; // e bem abaixo do chão (mais que a queda até renascer, 30 m)
 const CORE = 55; // bloco central de -55 a 55: separa os quatro corredores
 // Bloco central: 18 m. Com a corrida em todas as paredes, um canto (bloco central + bloco do
-// túnel da estação 3) sobe até ~11 m; com 12 m dava para subir no bloco e cortar caminho.
+// túnel da estação 3) sobe até ~11 m; com 12 m ficava no limite.
 const CORE_HEIGHT = 18;
 
 // Direções (yaw) de quem anda em cada corredor: 0 olha para -z.

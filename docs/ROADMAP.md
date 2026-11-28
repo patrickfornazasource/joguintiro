@@ -68,20 +68,20 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 
 ## F2: Combate e Carga Cinética
 
-- [ ] **F2-01 Sistema de Carga.** Enche com velocidade e eventos (pulo na parede, deslize). Regras do GDD, seção 3.
+- [ ] **[F2-01](tarefas/F2-01.md)** Sistema de Carga. Enche com velocidade e eventos (pulo na parede, deslize). Regras do GDD, seção 3.
   Pronto quando: testes cobrem ganho parado, ganho em alta velocidade e bônus.
-- [ ] **F2-02 Rifle Cinético.** Tiro instantâneo (raycast), custo de Carga, dano escala com velocidade, coice.
-- [ ] **F2-03 Descarga (disparo alternativo).** Gasta toda a Carga, impulso proporcional, dano em cone.
-- [ ] **F2-04 HUD de combate.** Barra de Carga dividida em "tiros disponíveis", vida, "dano do próximo tiro", marcador de acerto.
-- [ ] **F2-05 Alvos treináveis (bots offline).** Bonecos que andam e pulam para treinar sozinho.
-- [ ] **F2-06 Spray (escopeta).**
-- [ ] **F2-07 Lata (projétil explosivo).** Projétil com física, explosão com dano em área e empurrão.
-- [ ] **F2-08 Troca de armas.** 1/2/3 e roda do mouse.
-- [ ] **F2-09 Morte e renascimento.** Pontos de nascimento longe dos inimigos; renasce com Carga cheia.
-- [ ] **F2-10 Arma na tela (viewmodel).** Modelo simples, animação de coice, brilho pela Carga.
-- [ ] **F2-11 Sons sintetizados.** Tiro, acerto, pulo, deslize, plataforma de salto (Web Audio, sem arquivos).
-- [ ] **F2-12 Dash de coice definitivo.** O dash vira disparo da arma atual na direção oposta ao movimento: gasta Carga, causa dano leve atrás, força e efeito diferentes por arma (tabela do GDD, seção 6).
-  Depende de: F1-09d, F2-01, F2-06, F2-07.
+- [ ] **[F2-02](tarefas/F2-02.md)** Rifle Cinético. Tiro instantâneo (raycast), custo de Carga, dano escala com velocidade, coice.
+- [ ] **[F2-03](tarefas/F2-03.md)** Descarga (disparo alternativo). Gasta toda a Carga, impulso proporcional, dano em cone.
+- [ ] **[F2-04](tarefas/F2-04.md)** HUD de combate. Barra de Carga dividida em "tiros disponíveis", vida, "dano do próximo tiro", marcador de acerto.
+- [ ] **[F2-05](tarefas/F2-05.md)** Alvos treináveis (bots offline). Bonecos que andam e pulam para treinar sozinho.
+- [ ] **[F2-06](tarefas/F2-06.md)** Spray (escopeta).
+- [ ] **[F2-07](tarefas/F2-07.md)** Lata (projétil explosivo). Projétil com física, explosão com dano em área e empurrão.
+- [ ] **[F2-08](tarefas/F2-08.md)** Troca de armas. 1/2/3 e roda do mouse.
+- [ ] **[F2-09](tarefas/F2-09.md)** Morte e renascimento. Pontos de nascimento longe dos inimigos; renasce com Carga cheia.
+- [ ] **[F2-10](tarefas/F2-10.md)** Arma na tela (viewmodel). Modelo simples, animação de coice, brilho pela Carga.
+- [ ] **[F2-11](tarefas/F2-11.md)** Sons sintetizados. Tiro, acerto, pulo, deslize, plataforma de salto (Web Audio, sem arquivos).
+- [ ] **[F2-12](tarefas/F2-12.md)** Dash de coice definitivo. O dash vira disparo da arma atual na direção oposta ao movimento: gasta Carga, causa dano leve atrás, força e efeito diferentes por arma (tabela do GDD, seção 6).
+  Depende de: F1-15 (o dash provisório; antes escrito "F1-09d"), F2-01, F2-06, F2-07.
 
 **Marco F2 🧑 Teste humano #2:** contra os alvos, o jogador sente que "correr = mais dano" e usa o coice para se mover sem ninguém explicar?
 
