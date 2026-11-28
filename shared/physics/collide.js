@@ -38,8 +38,12 @@ export function playerBox(p) {
   };
 }
 
-/** A caixa participa da colisão? Tinta UV inativa (active: false) é ignorada. */
+/**
+ * A caixa participa da colisão? Tinta UV inativa (active: false) é ignorada, e corrimãos
+ * também (são trilhos para deslizar, F1-17; não barram o corpo nem a caixa inclinada deles).
+ */
 export function isSolid(b) {
+  if (b.type === BOX_TYPES.RAIL) return false;
   return !(b.type === BOX_TYPES.UV && b.active === false);
 }
 

@@ -128,7 +128,7 @@ const loop = createLoop({
     debug.set('pulo duplo', p.jumpsLeft > 0 ? 'disponível' : 'usado');
     debug.set('pulos na parede', `${p.wallJumpsLeft} de ${MOVE.WALL_JUMP_MAX}`);
     debug.set('dash (cargas)', `${p.dashCharges} de ${MOVE.DASH_CHARGES}`);
-    debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado', wallrun: 'correndo na parede', slam: 'golpe no chão', dash: 'dash' }[p.state] ?? p.state);
+    debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado', wallrun: 'correndo na parede', slam: 'golpe no chão', dash: 'dash', rail: 'no corrimão' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
     debug.set('sensibilidade', me.sensitivity.toFixed(4));
     debug.set('renasceu', me.respawns);
