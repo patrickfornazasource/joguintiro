@@ -188,3 +188,121 @@ test('depois da espera, a mesma parede volta a valer', () => {
   stepPlayer(p, input({ jump: true, jumpPressed: true }), map, DT);
   assert.ok(has(p, 'wallJump'), 'pulou de novo na mesma parede');
 });
+
+// Ajuste da revisão: entrar de novo na MESMA parede (sem tocar o chão ou outra parede)
+// recarregava pulos na parede e pulo duplo, e dava para escalar sem limite (chegava a 20 m).
+const lone = box(2.25, 10, 0, 0.5, 20, 60, T.WALLRUN); // parede ciano sozinha: x de 2 a 2,5
+const loneMap = { id: 't', name: 't', boxes: [floor, lone], spawns: [] };
+
+/** Encostado na parede ciano sozinha, segurando W com o olhar `deg` e apertando Espaço a cada `every` passos. */
+function spam(deg, every, seconds) {
+  const yaw = (deg * Math.PI) / 180;
+  const p = createPlayer({ x: 2 - R, y: 0, z: 20, yaw });
+  stepPlayer(p, emptyInput(), loneMap, DT);
+  let top = 0;
+  let paid = 0; // pulos na parede pagos neste voo (pulo na parede ou salto de corrida em parede já usada)
+  let doubles = 0;
+  const worst = { paid: 0, doubles: 0 };
+  for (let i = 0; i < seconds / DT; i++) {
+    const press = i % every === 0;
+    const repeated = p.wallrun && !p.wallrun.fresh;
+    stepPlayer(p, input({ moveZ: 1, yaw, jump: press, jumpPressed: press }), loneMap, DT);
+    for (const e of p.events) {
+      if (e.type === 'wallJump' || (e.type === 'wallrunJump' && repeated)) paid++;
+      if (e.type === 'doubleJump') doubles++;
+    }
+    top = Math.max(top, p.pos.y);
+    if (p.onGround) {
+      worst.paid = Math.max(worst.paid, paid);
+      worst.doubles = Math.max(worst.doubles, doubles);
+      paid = 0;
+      doubles = 0;
+    }
+  }
+  return { top, ...worst };
+}
+
+test('parede ciano sozinha, W + Espaço sem parar: não passa de ~3,5 m (em qualquer ângulo)', () => {
+  // Apertando sem parar (um aperto novo a cada 2 passos), olhando de 0 a 90 graus contra a parede.
+  // O teto real é cerca de 3,8 m: pulo do chão, pulos na parede e pulo duplo, todos permitidos.
+  for (let deg = 0; deg >= -90; deg -= 5) {
+    const { top } = spam(deg, 2, 10);
+    assert.ok(top <= 4, `olhando ${deg}°: subiu até ${top.toFixed(2)} m`);
+  }
+});
+
+test('parede ciano sozinha: em qualquer ritmo, cada voo respeita os limites do GDD', () => {
+  // Por voo: no máximo 3 pulos na parede (GDD) e 2 pulos duplos (o do voo e 1 recarga ao
+  // correr pela primeira vez naquela parede). Antes da correção chegava a 20 m.
+  for (let deg = 0; deg >= -90; deg -= 15) {
+    for (const every of [2, 4, 8, 20]) {
+      const r = spam(deg, every, 20);
+      assert.ok(r.paid <= MOVE.WALL_JUMP_MAX, `${deg}°/${every}: ${r.paid} pulos na parede num voo`);
+      assert.ok(r.doubles <= 2 * MOVE.AIR_JUMPS, `${deg}°/${every}: ${r.doubles} pulos duplos num voo`);
+      assert.ok(r.top < 7, `${deg}°/${every}: ${r.top.toFixed(2)} m`);
+    }
+  }
+});
+
+test('correr de novo na mesma parede no mesmo voo não recarrega; o salto gasta um pulo na parede', () => {
+  const p = createPlayer({ x: 2 - R - 0.3, y: 10, z: 20, yaw: 0 });
+  p.vel = { x: 2, y: 0, z: -10 };
+  for (let i = 0; i < 30 && !p.wallrun; i++) stepPlayer(p, input({ moveZ: 1, yaw: 0 }), loneMap, DT);
+  assert.ok(p.wallrun && p.wallrun.fresh, 'primeira corrida: parede nova');
+  // Solta (tecla para longe), se afasta além da memória de parede, gasta o pulo duplo
+  // e volta à mesma parede depois da espera.
+  stepPlayer(p, input({ moveX: -1, yaw: 0 }), loneMap, DT);
+  p.vel.x = -3;
+  for (let i = 0; i < 0.2 / DT; i++) stepPlayer(p, emptyInput(), loneMap, DT);
+  assert.equal(p.wall, null, 'longe da parede');
+  stepPlayer(p, input({ jump: true, jumpPressed: true }), loneMap, DT);
+  assert.ok(has(p, 'doubleJump'));
+  assert.equal(p.jumpsLeft, 0);
+  p.wallJumpsLeft = 1;
+  let back = false;
+  for (let i = 0; i < 2 / DT && !back; i++) {
+    p.vel.x = 2;
+    stepPlayer(p, input({ moveZ: 1, yaw: 0 }), loneMap, DT);
+    back = !!p.wallrun;
+  }
+  assert.ok(back, 'voltou a correr na mesma parede');
+  assert.equal(p.wallrun.fresh, false);
+  assert.equal(p.jumpsLeft, 0, 'não recarregou o pulo duplo');
+  assert.equal(p.wallJumpsLeft, 1, 'não recarregou os pulos na parede');
+  stepPlayer(p, input({ moveZ: 1, yaw: 0, jump: true, jumpPressed: true }), loneMap, DT);
+  assert.ok(has(p, 'wallrunJump'));
+  assert.equal(p.wallJumpsLeft, 0, 'o salto gastou um pulo na parede');
+});
+
+test('sem pulos na parede numa parede repetida, Espaço só solta da parede (sem impulso)', () => {
+  const p = createPlayer({ x: 2 - R - 0.3, y: 10, z: 20, yaw: 0 });
+  p.vel = { x: 2, y: 0, z: -10 };
+  for (let i = 0; i < 30 && !p.wallrun; i++) stepPlayer(p, input({ moveZ: 1, yaw: 0 }), loneMap, DT);
+  p.wallrun.fresh = false; // simula a parede já usada neste voo
+  p.wallJumpsLeft = 0;
+  p.jumpsLeft = 0;
+  const vy = p.vel.y;
+  stepPlayer(p, input({ moveZ: 1, yaw: 0, jump: true, jumpPressed: true }), loneMap, DT);
+  assert.equal(p.wallrun, null, 'soltou');
+  assert.deepEqual(p.events.map((e) => e.type), ['wallrunEnd'], 'sem salto');
+  assert.ok(p.vel.y <= vy, 'sem impulso para cima');
+});
+
+test('numa parede repetida sem pulos na parede, com pulo duplo disponível, Espaço vira pulo duplo', () => {
+  const p = createPlayer({ x: 2 - R - 0.3, y: 10, z: 20, yaw: 0 });
+  p.vel = { x: 2, y: 0, z: -10 };
+  for (let i = 0; i < 30 && !p.wallrun; i++) stepPlayer(p, input({ moveZ: 1, yaw: 0 }), loneMap, DT);
+  p.wallrun.fresh = false;
+  p.wallJumpsLeft = 0;
+  p.jumpsLeft = 1;
+  stepPlayer(p, input({ moveZ: 1, yaw: 0, jump: true, jumpPressed: true }), loneMap, DT);
+  assert.deepEqual(p.events.map((e) => e.type), ['wallrunEnd', 'doubleJump']);
+});
+
+test('tocar o chão faz a parede voltar a ser nova (recarrega na próxima corrida)', () => {
+  const p = createPlayer({ x: 2 - R, y: 0, z: 20, yaw: 0 });
+  p.wallsUsed = [lone];
+  stepPlayer(p, emptyInput(), loneMap, DT);
+  stepPlayer(p, emptyInput(), loneMap, DT);
+  assert.deepEqual(p.wallsUsed, []);
+});

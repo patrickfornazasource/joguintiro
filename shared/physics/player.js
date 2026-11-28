@@ -69,6 +69,11 @@ export function createPlayer(spawn) {
     wallrun: null,
     /** Última parede em que correu e há quanto tempo saiu: { box, age }, ou null. */
     wallrunLast: null,
+    /**
+     * Paredes já usadas neste voo (corrida ou pulo na parede). Zera ao tocar o chão.
+     * Correr numa parede desta lista não recarrega nada (GDD: recarga só em "parede nova").
+     */
+    wallsUsed: [],
     /** Altura atual do corpo (m): PLAYER.HEIGHT em pé, PLAYER.CROUCH_HEIGHT agachado. */
     height: PLAYER.HEIGHT,
 
@@ -158,6 +163,7 @@ export function stepPlayer(p, input, map, dt) {
     p.coyote = 0;
     // A parede usada sai da memória e fica em espera (WALL_JUMP_SAME_WALL_DELAY).
     p.lastWallJump = { box: p.wall.box, age: 0 };
+    if (!p.wallsUsed.includes(p.wall.box)) p.wallsUsed.push(p.wall.box); // parede usada neste voo
     p.wall = null;
     p.wallAge = Infinity;
     p.events.push({ type: 'wallJump' });

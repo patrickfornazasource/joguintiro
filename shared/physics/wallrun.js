@@ -57,6 +57,7 @@ export function updateWallrun(p, input, dt) {
     p.wallrunLast.age += dt;
     if (p.onGround) p.wallrunLast.exhausted = false; // tocar o chão libera a parede de novo
   }
+  if (p.onGround && p.wallsUsed.length) p.wallsUsed = []; // tocar o chão: todas voltam a ser novas
 
   const wish = wishDir(input);
   const amount = Math.hypot(wish.x, wish.z);
@@ -66,7 +67,14 @@ export function updateWallrun(p, input, dt) {
     w.time += dt;
     const n = w.normal;
     // Pular: sai em diagonal (para fora e para cima), mantendo a velocidade ao longo da parede.
+    // Numa parede repetida (sem tocar o chão ou outra parede), o salto gasta um pulo na
+    // parede; sem nenhum, Espaço só solta da parede (senão daria para escalar sem limite).
+    if (input.jumpPressed && !w.fresh && p.wallJumpsLeft <= 0) {
+      endWallrun(p);
+      return null;
+    }
     if (input.jumpPressed) {
+      if (!w.fresh) p.wallJumpsLeft -= 1;
       const t = alongWall(p.vel, n);
       p.vel.x = t.x + n.x * MOVE.WALLRUN_JUMP_OUT;
       p.vel.z = t.z + n.z * MOVE.WALLRUN_JUMP_OUT;
@@ -105,8 +113,15 @@ export function updateWallrun(p, input, dt) {
   p.wallrun = { box: wall.box, normal: { ...wall.normal }, time: 0 };
   p.wallrunLast = null; // grudar em outra parede libera a anterior
   p.vel.y = 0; // entra sem subir nem cair: depois só a gravidade reduzida
-  p.jumpsLeft = MOVE.AIR_JUMPS; // correr na parede recarrega o pulo duplo (GDD)
-  p.wallJumpsLeft = MOVE.WALL_JUMP_MAX; // e os pulos na parede (F1-13)
+  // Correr numa parede NOVA (não usada neste voo) recarrega o pulo duplo e os pulos na
+  // parede (GDD). Parede já usada no voo não recarrega nada (senão dá para escalar).
+  const fresh = !p.wallsUsed.includes(wall.box);
+  if (fresh) {
+    p.jumpsLeft = MOVE.AIR_JUMPS;
+    p.wallJumpsLeft = MOVE.WALL_JUMP_MAX;
+    p.wallsUsed.push(wall.box);
+  }
+  p.wallrun.fresh = fresh; // parede nova (recarregou) ou repetida
   p.jumpBuffer = 0;
   p.events.push({ type: 'wallrunStart' });
   runAlong(p, dt);
