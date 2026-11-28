@@ -242,8 +242,11 @@ export function stepPlayer(p, input, map, dt) {
   }
 
   // Slam cai a velocidade constante (sem gravidade somando); corrida na parede, gravidade reduzida.
-  // Dash e slam: sem gravidade somando; corrida na parede: gravidade reduzida.
-  stepBody(p, map, dt, dashing || p.slam ? 0 : p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
+  // Dash no ar e slam: sem gravidade somando; corrida na parede: gravidade reduzida.
+  // Dash no chão: a gravidade continua (o chão a anula), para seguir pisando: sobe degraus
+  // e pisa em plataformas de salto durante o arranco. No ar, o dash não perde altura.
+  const airDash = dashing && !p.onGround;
+  stepBody(p, map, dt, airDash || p.slam ? 0 : p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
   updateWall(p, map, dt); // detector de parede (F1-11)
   if (p.wallrun && p.onGround) endWallrun(p);
   if (p.slam && p.onGround) {

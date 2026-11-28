@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PHYSICS, MOVE } from '../shared/constants.js';
 import { box, BOX_TYPES as T, validateMap } from '../shared/maps/format.js';
-import { sandbox, PAD_TO_HIGH as H } from '../shared/maps/sandbox.js';
+import { sandbox, PAD_TO_HIGH as H, OUTER_WALL_HEIGHT } from '../shared/maps/sandbox.js';
+import { searchEscapes } from './helpers/escape-search.js';
 import { createPlayer, stepPlayer, emptyInput } from '../shared/physics/player.js';
 
 const DT = PHYSICS.FIXED_DT;
@@ -102,4 +103,65 @@ test('Sandbox: a plataforma vertical continua lá e lança só para cima', () =>
   const p = dropOn(sandbox, cx, cz);
   assert.equal(p.vel.y, MOVE.PAD_SPEED);
   assert.equal(p.vel.x, 0);
+});
+
+// Ajustes da revisão do PR #27.
+
+test('a partir do pad direcional e da plataforma alta: pulo + pulo duplo + pulo na parede + dash não saem do mapa', () => {
+  // Varre 8 direções x momentos do pulo duplo x momentos do dash x pulos na parede, a partir de
+  // cada ponto de partida. Antes (paredes externas de 6 m) saíam 238 de 1008 tentativas.
+  const vpad = sandbox.boxes.find((b) => b.type === 'pad' && !b.launch);
+  const t = H.target;
+  const starts = [
+    { x: H.pad.x - 3, y: 0, z: H.pad.z }, // chegando no pad direcional
+    { x: H.pad.x, y: 0.5, z: H.pad.z }, // em cima do pad direcional
+    { x: (vpad.min.x + vpad.max.x) / 2, y: 0.5, z: (vpad.min.z + vpad.max.z) / 2 }, // pad vertical
+    { x: t.x + t.width / 2 - 0.5, y: t.top, z: t.z }, // borda leste da plataforma alta
+    { x: t.x, y: t.top, z: t.z + t.depth / 2 - 0.5 }, // borda norte
+    { x: t.x, y: t.top, z: t.z - t.depth / 2 + 0.5 }, // borda sul
+    { x: t.x, y: t.top, z: t.z }, // meio
+  ];
+  const r = searchEscapes(sandbox, starts, 29);
+  assert.ok(r.tries >= 1000, `tentativas: ${r.tries}`);
+  assert.deepEqual(r.escapes, [], `saiu do mapa em ${r.escapes.length} de ${r.tries}`);
+  assert.ok(r.maxHeight < OUTER_WALL_HEIGHT - 3, `altura máxima ${r.maxHeight.toFixed(2)} m (paredes de ${OUTER_WALL_HEIGHT} m)`);
+});
+
+test('o pad interrompe o dash', () => {
+  // Dash no chão em direção ao pad: ao pisar, o dash acaba e o lançamento vale (sobe nos passos seguintes).
+  const p = createPlayer({ x: -2.5, y: 0, z: 0, yaw: -Math.PI / 2 }); // olhando para +x
+  stepPlayer(p, emptyInput(), padMap, DT);
+  stepPlayer(p, input({ yaw: -Math.PI / 2, dashPressed: true }), padMap, DT);
+  assert.ok(p.dash, 'em dash');
+  for (let i = 0; i < 40 && !has(p, 'pad'); i++) stepPlayer(p, input({ yaw: -Math.PI / 2 }), padMap, DT);
+  assert.ok(has(p, 'pad'), 'pisou no pad durante o dash');
+  assert.equal(p.dash, null, 'dash interrompido');
+  stepPlayer(p, emptyInput(), padMap, DT);
+  stepPlayer(p, emptyInput(), padMap, DT);
+  assert.ok(p.vel.y > MOVE.PAD_SPEED - 1, `continua subindo: ${p.vel.y}`);
+});
+
+test('o pad termina o deslize', () => {
+  const p = createPlayer({ x: -6, y: 0, z: 0, yaw: -Math.PI / 2 });
+  stepPlayer(p, emptyInput(), padMap, DT);
+  p.vel.x = 12;
+  stepPlayer(p, input({ yaw: -Math.PI / 2, crouch: true, crouchPressed: true }), padMap, DT);
+  assert.ok(p.sliding, 'deslizando');
+  let launchStep = null;
+  for (let i = 0; i < 120 && !launchStep; i++) {
+    stepPlayer(p, input({ yaw: -Math.PI / 2, crouch: true }), padMap, DT);
+    if (has(p, 'pad')) launchStep = p.events.map((e) => e.type);
+  }
+  assert.ok(launchStep, 'chegou ao pad deslizando');
+  assert.ok(launchStep.includes('slideEnd'), `no passo do lançamento: ${launchStep.join(', ')}`);
+  assert.equal(p.sliding, false);
+});
+
+test('o pad zera as paredes usadas no voo (wallsUsed)', () => {
+  const someWall = box(50, 5, 50, 1, 10, 1, T.WALLRUN);
+  const p = createPlayer({ x: 0, y: 1.5, z: 0 });
+  p.wallsUsed = [someWall];
+  for (let i = 0; i < 2 / DT && !has(p, 'pad'); i++) stepPlayer(p, emptyInput(), padMap, DT);
+  assert.ok(has(p, 'pad'));
+  assert.deepEqual(p.wallsUsed, [], 'paredes liberadas no lançamento');
 });

@@ -70,17 +70,21 @@ export const PAD_TO_HIGH = Object.freeze({
   target: { x: 25, z: 21, width: 6, depth: 8, top: 6 }, // plataforma alta: x de 22 a 28, z de 17 a 25
 });
 
+/** Altura das paredes externas do Sandbox (m). Ver o comentário nas paredes. */
+export const OUTER_WALL_HEIGHT = 16;
+
 export const sandbox = Object.freeze({
   id: 'sandbox',
   name: 'Sandbox (cinza)',
   boxes: [
     // Chão 60x60
     box(0, -0.5, 0, 60, 1, 60),
-    // Paredes externas (6 m de altura)
-    box(0, 3, -29.5, 60, 6, 1),
-    box(0, 3, 29.5, 60, 6, 1),
-    box(-29.5, 3, 0, 1, 6, 60),
-    box(29.5, 3, 0, 1, 6, 60),
+    // Paredes externas, 16 m de altura (F1-16): com plataforma de salto (6 m), plataforma alta
+    // (6 m) e escalada (pulo + pulos na parede + duplo, até ~5,5 m), 6 m deixava sair do mapa.
+    box(0, OUTER_WALL_HEIGHT / 2, -29.5, 60, OUTER_WALL_HEIGHT, 1),
+    box(0, OUTER_WALL_HEIGHT / 2, 29.5, 60, OUTER_WALL_HEIGHT, 1),
+    box(-29.5, OUTER_WALL_HEIGHT / 2, 0, 1, OUTER_WALL_HEIGHT, 60),
+    box(29.5, OUTER_WALL_HEIGHT / 2, 0, 1, OUTER_WALL_HEIGHT, 60),
     // Blocos soltos
     box(-8, 0.5, -6, 2, 1, 2),
     box(-12, 1, -10, 4, 2, 4),

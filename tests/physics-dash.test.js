@@ -175,3 +175,15 @@ test('durante o dash no chão, Espaço não pula', () => {
   assert.equal(p.state, 'dash');
   assert.equal(p.vel.y, 0);
 });
+
+test('dash no chão continua pisando: sobe degrau baixo durante o arranco', () => {
+  const step = box(3, 0.15, 0, 4, 0.3, 4); // degrau de 0,3 m em x de 1 a 5
+  const map = { id: 't', name: 't', boxes: [floor, step], spawns: [] };
+  const p = createPlayer({ x: 0, y: 0, z: 0, yaw: -Math.PI / 2 }); // olhando para +x
+  stepPlayer(p, emptyInput(), map, DT);
+  stepPlayer(p, input({ yaw: -Math.PI / 2, dashPressed: true }), map, DT);
+  assert.equal(p.onGround, true, 'no chão durante o dash');
+  for (let i = 0; i < 10 && p.dash; i++) stepPlayer(p, input({ yaw: -Math.PI / 2 }), map, DT);
+  assert.ok(p.pos.x > 1.5, `passou da borda do degrau: x = ${p.pos.x}`);
+  assert.ok(Math.abs(p.pos.y - 0.3) < 1e-9, `em cima do degrau: y = ${p.pos.y}`);
+});
