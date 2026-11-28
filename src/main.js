@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { PHYSICS, PLAYER, DEMO, VIEW, MOVE } from '../shared/constants.js';
 import { createLoop } from './core/loop.js';
 import { attachInput, ACTIONS } from './core/input.js';
-import { createDebugPanel } from './ui/debug.js';
+import { createDebugPanel, createRateCounter } from './ui/debug.js';
 import { getMap } from '../shared/maps/index.js';
 import { validateMap } from '../shared/maps/format.js';
 import { createMapMeshes } from './world/mapRenderer.js';
@@ -96,6 +96,10 @@ window.addEventListener('keydown', (e) => {
 });
 const deg = (rad) => Math.round((rad * 180) / Math.PI);
 let lastFrame = performance.now();
+// Diagnóstico do mouse no F3 (bug relatado: câmera travada na corrida na parede).
+let lastFrameMouse = { x: 0, y: 0 };
+let mouseSeen = 0;
+const mouseRate = createRateCounter();
 
 // Nomes das ações em português, só para exibir no painel.
 const ACTION_LABELS = {
@@ -132,6 +136,7 @@ const loop = createLoop({
     // Mouse a cada quadro (resposta imediata); posição interpolada entre passos.
     const mouse = input.consumeMouseDelta();
     me.look(mouse.x, mouse.y);
+    lastFrameMouse = mouse;
     const eye = me.eye(alpha, frameDt);
     camera.position.set(eye.x, eye.y, eye.z);
     camera.rotation.set(me.pitch, me.yaw, me.roll);
@@ -160,6 +165,18 @@ const loop = createLoop({
     debug.set('dash (cargas)', `${p.dashCharges} de ${MOVE.DASH_CHARGES}`);
     debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado', wallrun: 'correndo na parede', slam: 'golpe no chão', dash: 'dash', rail: 'no corrimão' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
+    debug.set('inclinação da câmera (graus)', deg(me.roll));
+    // Mouse: movimentos por segundo que chegam com o mouse travado (os que giram a câmera),
+    // o movimento deste quadro e o último recebido. Se ficar 0 mexendo o mouse, o navegador
+    // (ou o sistema) parou de mandar o mouse para o jogo.
+    const ms = input.mouseStats;
+    for (; mouseSeen < ms.locked; mouseSeen++) mouseRate.tick();
+    mouseRate.sample(now);
+    debug.set('mouse (movimentos/s)', mouseRate.measured ? mouseRate.rate.toFixed(0) : 'medindo...');
+    debug.set('mouse neste quadro (pixels)', `${lastFrameMouse.x}, ${lastFrameMouse.y}`);
+    debug.set('mouse último movimento (pixels)', `${ms.last.x}, ${ms.last.y}`);
+    debug.set('mouse sem trava (movimentos)', ms.unlocked);
+    debug.set('janela com foco', document.hasFocus() ? 'sim' : 'não');
     debug.set('sensibilidade', me.sensitivity.toFixed(4));
     debug.set('campo de visão (graus)', me.fov.toFixed(1));
     debug.set('renasceu', me.respawns);

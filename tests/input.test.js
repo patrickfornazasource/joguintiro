@@ -186,6 +186,17 @@ test('navegador: teclas do jogo bloqueiam o padrão (Espaço, Tab, Ctrl); outras
   assert.equal(input.isDown('crouch'), true);
 });
 
+test('navegador: diagnóstico do mouse (F3) conta movimentos com e sem trava', () => {
+  const { win, canvas, input } = setup();
+  win.fire('mousemove', { movementX: 3, movementY: 1 });
+  assert.deepEqual(input.mouseStats, { locked: 0, unlocked: 1, last: { x: 0, y: 0 } });
+  canvas.fire('mousedown', { button: 0 });
+  win.fire('mousemove', { movementX: 7, movementY: -2 });
+  win.fire('mousemove', { movementX: -4, movementY: 5 });
+  assert.deepEqual(input.mouseStats, { locked: 2, unlocked: 1, last: { x: -4, y: 5 } });
+  assert.deepEqual(input.consumeMouseDelta(), { x: 3, y: 3 });
+});
+
 test('navegador: menu do botão direito bloqueado', () => {
   const { canvas } = setup();
   assert.equal(canvas.fire('contextmenu').defaultPrevented, true);
