@@ -58,7 +58,7 @@ Objetivo: correr, pular, deslizar e correr na parede precisa ser gostoso **antes
 - [x] **[F1-16](tarefas/F1-16.md)** Plataformas de salto
 - [x] **[F1-17](tarefas/F1-17.md)** Corrimão deslizável
 - [x] **[F1-18](tarefas/F1-18.md)** Sensação de velocidade e velocímetro
-- [ ] **[F1-19](tarefas/F1-19.md)** Mapa de treino com estações
+- [x] **[F1-19](tarefas/F1-19.md)** Mapa de treino com estações
 - [ ] **[F1-20](tarefas/F1-20.md)** Painel de ajuste ao vivo (F4)
 - [ ] **[F1-21](tarefas/F1-21.md)** Roteiro do Teste humano #1
 

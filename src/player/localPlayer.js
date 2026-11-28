@@ -152,7 +152,8 @@ export function buildInput(keys, yaw, pitch) {
  * @param {{ map: object, spawnIndex?: number, sensitivity?: number }} opts
  */
 export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUSE_SENSITIVITY, fovBase = CAMERA.FOV_BASE }) {
-  const spawn = map.spawns[spawnIndex] ?? map.spawns[0];
+  let spawn = map.spawns[spawnIndex] ?? map.spawns[0];
+  let lastGround = { x: spawn.x, z: spawn.z }; // último lugar onde pisou no chão
   const smoother = createStepSmoother();
   let player = createPlayer(spawn);
   let prev = { ...player.pos };
@@ -167,7 +168,27 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
   let airPeak = null; // ponto mais alto desde que saiu do chão (para o afundamento ao pousar)
   let dip = { time: 0, depth: 0 }; // afundamento da câmera ao pousar de alto
 
-  function respawn() {
+  /** Ponto de nascimento mais perto de (x, z) no plano. */
+  function nearestSpawn(x, z) {
+    let best = spawn;
+    let bestD = Infinity;
+    for (const s of map.spawns) {
+      const d = (s.x - x) ** 2 + (s.z - z) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = s;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Renasce num ponto. Padrão: o mais perto do último lugar onde pisou no chão (F1-19): quem cai
+   * num fosso volta à estação em que estava, e não à seguinte (que pode estar mais perto do buraco).
+   */
+  function respawn(at = nearestSpawn(lastGround.x, lastGround.z)) {
+    spawn = at;
+    lastGround = { x: at.x, z: at.z };
     player = createPlayer(spawn);
     prev = { ...player.pos };
     smoother.reset();
@@ -213,6 +234,10 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
     get respawns() {
       return respawns;
     },
+    /** Volta ao ponto de nascimento (estação) mais perto de onde está agora (tecla R). */
+    respawnNearest() {
+      respawn(nearestSpawn(player.pos.x, player.pos.z));
+    },
     sensitivity,
 
     /** Gira a visão pelo movimento do mouse (pixels). Chamar a cada quadro. */
@@ -237,7 +262,10 @@ export function createLocalPlayer({ map, spawnIndex = 0, sensitivity = VIEW.MOUS
         if (depth > 0) dip = { time: CAMERA.LAND_DIP_TIME, depth };
         airPeak = null;
       }
-      if (player.onGround) airPeak = null;
+      if (player.onGround) {
+        airPeak = null;
+        lastGround = { x: player.pos.x, z: player.pos.z };
+      }
       const land = player.events.find((e) => e.type === 'slamLand');
       if (land) shake = { time: VIEW.SLAM_SHAKE_TIME, amp: slamShakeAmplitude(land.height), clock: 0 };
       if (player.pos.y < -PLAYER.RESPAWN_FALL_DEPTH) respawn();
