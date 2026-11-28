@@ -197,6 +197,31 @@ test('navegador: diagnóstico do mouse (F3) conta movimentos com e sem trava', (
   assert.deepEqual(input.consumeMouseDelta(), { x: 3, y: 3 });
 });
 
+test('navegador: digitando num campo (painel de ajuste F4), as teclas são do campo, não do jogo', () => {
+  const { win, input } = setup();
+  for (const tagName of ['INPUT', 'TEXTAREA']) {
+    const e = win.fire('keydown', { code: 'Digit1', target: { tagName } });
+    assert.equal(e.defaultPrevented, false, `${tagName}: o número entra no campo`);
+    win.fire('keydown', { code: 'KeyW', target: { tagName } });
+  }
+  assert.equal(input.isDown('weapon1'), false);
+  assert.equal(input.isDown('forward'), false);
+  win.fire('keydown', { code: 'KeyW', target: { tagName: 'CANVAS' } });
+  assert.equal(input.isDown('forward'), true, 'fora de campos, vale para o jogo');
+});
+
+test('navegador: mouse com Shift e Ctrl segurados continua girando (dash, agachar)', () => {
+  const { win, canvas, input } = setup();
+  canvas.fire('mousedown', { button: 0 }); // trava
+  win.fire('keydown', { code: 'ShiftLeft', shiftKey: true });
+  win.fire('keydown', { code: 'ControlLeft', ctrlKey: true, shiftKey: true });
+  win.fire('mousemove', { movementX: 12, movementY: -6, shiftKey: true, ctrlKey: true });
+  win.fire('mousemove', { movementX: 8, movementY: 2, shiftKey: true, ctrlKey: true });
+  assert.deepEqual(input.consumeMouseDelta(), { x: 20, y: -4 });
+  assert.equal(input.isDown('dash'), true, 'Shift continua segurado');
+  assert.equal(input.isDown('crouch'), true, 'Ctrl continua segurado');
+});
+
 test('navegador: menu do botão direito bloqueado', () => {
   const { canvas } = setup();
   assert.equal(canvas.fire('contextmenu').defaultPrevented, true);

@@ -78,6 +78,29 @@ test('câmera gira durante a corrida na parede (a cada quadro, várias vezes)', 
   assert.ok(Math.abs(me.roll) > 0, 'a câmera inclina na parede');
 });
 
+test('entrar na corrida na parede não muda o olhar (yaw e pitch iguais antes e depois de grudar)', () => {
+  const me = createLocalPlayer({ map });
+  me.look(30, -40); // olhar um pouco de lado e para cima
+  const yaw = me.yaw;
+  const pitch = me.pitch;
+  me.player.vel = { x: 0, y: 0, z: -11 };
+  me.step(keys(['forward'], ['jump']), DT);
+  for (let i = 0; i < 160 && !me.player.wallrun; i++) {
+    if (i === 30) me.player.vel.x = -2;
+    me.step(keys(i > 30 ? ['forward', 'left'] : ['forward']), DT);
+    me.eye(1, DT);
+  }
+  assert.ok(me.player.wallrun, 'grudou na parede');
+  assert.equal(me.yaw, yaw, 'yaw igual');
+  assert.equal(me.pitch, pitch, 'pitch igual');
+  for (let i = 0; i < 30; i++) {
+    me.step(keys(['forward', 'left']), DT);
+    me.eye(1, DT);
+  }
+  assert.equal(me.yaw, yaw, 'yaw igual correndo na parede');
+  assert.equal(me.pitch, pitch, 'pitch igual correndo na parede');
+});
+
 test('câmera gira depois de sair da parede pulando', () => {
   const me = startWallrun();
   for (let i = 0; i < 20; i++) me.step(keys(['forward', 'left']), DT);

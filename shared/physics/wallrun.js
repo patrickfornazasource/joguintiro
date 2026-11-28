@@ -34,16 +34,16 @@ export function endWallrun(p, exhausted = false) {
 }
 
 /** Velocidade do passo durante a corrida: ao longo da parede, ganhando velocidade, colada nela. */
-function runAlong(p, dt) {
+function runAlong(p, dt, cfg) {
   const n = p.wallrun.normal;
   const t = alongWall(p.vel, n);
   const speed = Math.hypot(t.x, t.z);
-  const next = speed < MOVE.WALLRUN_MAX_SPEED
-    ? Math.min(speed + MOVE.WALLRUN_ACCEL * dt, MOVE.WALLRUN_MAX_SPEED)
+  const next = speed < cfg.WALLRUN_MAX_SPEED
+    ? Math.min(speed + cfg.WALLRUN_ACCEL * dt, cfg.WALLRUN_MAX_SPEED)
     : speed; // já acima do máximo (chegou rápido): não acelera, mas também não freia
   const k = speed > 0 ? next / speed : 0;
-  p.vel.x = t.x * k - n.x * MOVE.WALLRUN_STICK;
-  p.vel.z = t.z * k - n.z * MOVE.WALLRUN_STICK;
+  p.vel.x = t.x * k - n.x * cfg.WALLRUN_STICK;
+  p.vel.z = t.z * k - n.z * cfg.WALLRUN_STICK;
 }
 
 /**
@@ -52,7 +52,7 @@ function runAlong(p, dt) {
  * @returns {'running'|'jumped'|null} 'running' correndo (já cuidou da velocidade),
  *   'jumped' pulou para fora neste passo, null fora da parede
  */
-export function updateWallrun(p, input, dt) {
+export function updateWallrun(p, input, dt, cfg = MOVE) {
   if (p.wallrunLast) {
     p.wallrunLast.age += dt;
     if (p.onGround) p.wallrunLast.exhausted = false; // tocar o chão libera a parede de novo
@@ -76,9 +76,9 @@ export function updateWallrun(p, input, dt) {
     if (input.jumpPressed) {
       if (!w.fresh) p.wallJumpsLeft -= 1;
       const t = alongWall(p.vel, n);
-      p.vel.x = t.x + n.x * MOVE.WALLRUN_JUMP_OUT;
-      p.vel.z = t.z + n.z * MOVE.WALLRUN_JUMP_OUT;
-      p.vel.y = MOVE.WALLRUN_JUMP_UP;
+      p.vel.x = t.x + n.x * cfg.WALLRUN_JUMP_OUT;
+      p.vel.z = t.z + n.z * cfg.WALLRUN_JUMP_OUT;
+      p.vel.y = cfg.WALLRUN_JUMP_UP;
       p.coyote = 0;
       p.jumpBuffer = 0;
       p.events.push({ type: 'wallrunJump' });
@@ -87,13 +87,13 @@ export function updateWallrun(p, input, dt) {
     }
     const touching = p.wall && p.wall.age === 0 && p.wall.box === w.box;
     const t = alongWall(p.vel, n);
-    const awayFromWall = amount > 0 && (wish.x * n.x + wish.z * n.z) / amount > MOVE.WALLRUN_RELEASE_DOT;
-    const exhausted = w.time >= MOVE.WALLRUN_MAX_TIME || Math.hypot(t.x, t.z) < MOVE.WALLRUN_MIN_SPEED;
+    const awayFromWall = amount > 0 && (wish.x * n.x + wish.z * n.z) / amount > cfg.WALLRUN_RELEASE_DOT;
+    const exhausted = w.time >= cfg.WALLRUN_MAX_TIME || Math.hypot(t.x, t.z) < cfg.WALLRUN_MIN_SPEED;
     if (p.onGround || !touching || exhausted || awayFromWall) {
       endWallrun(p, exhausted);
       return null;
     }
-    runAlong(p, dt);
+    runAlong(p, dt, cfg);
     return 'running';
   }
 
@@ -102,13 +102,13 @@ export function updateWallrun(p, input, dt) {
   if (p.onGround || !wall || wall.age !== 0 || wall.type !== T.WALLRUN) return null;
   const last = p.wallrunLast;
   const sameWallBlocked = last && last.box === wall.box
-    && (last.exhausted || last.age < MOVE.WALLRUN_REATTACH_DELAY);
+    && (last.exhausted || last.age < cfg.WALLRUN_REATTACH_DELAY);
   if (sameWallBlocked) return null;
   // A face precisa ter comprimento para correr: a ponta estreita de uma parede fina não serve.
   const faceAxis = wall.normal.x !== 0 ? 'z' : 'x';
-  if (wall.box.max[faceAxis] - wall.box.min[faceAxis] < MOVE.WALLRUN_MIN_FACE) return null;
+  if (wall.box.max[faceAxis] - wall.box.min[faceAxis] < cfg.WALLRUN_MIN_FACE) return null;
   const t = alongWall(p.vel, wall.normal);
-  if (Math.hypot(t.x, t.z) < MOVE.WALLRUN_MIN_SPEED) return null; // devagar ou de frente
+  if (Math.hypot(t.x, t.z) < cfg.WALLRUN_MIN_SPEED) return null; // devagar ou de frente
 
   p.wallrun = { box: wall.box, normal: { ...wall.normal }, time: 0 };
   p.wallrunLast = null; // grudar em outra parede libera a anterior
@@ -117,13 +117,13 @@ export function updateWallrun(p, input, dt) {
   // parede (GDD). Parede já usada no voo não recarrega nada (senão dá para escalar).
   const fresh = !p.wallsUsed.includes(wall.box);
   if (fresh) {
-    p.jumpsLeft = MOVE.AIR_JUMPS;
-    p.wallJumpsLeft = MOVE.WALL_JUMP_MAX;
+    p.jumpsLeft = cfg.AIR_JUMPS;
+    p.wallJumpsLeft = cfg.WALL_JUMP_MAX;
     p.wallsUsed.push(wall.box);
   }
   p.wallrun.fresh = fresh; // parede nova (recarregou) ou repetida
   p.jumpBuffer = 0;
   p.events.push({ type: 'wallrunStart' });
-  runAlong(p, dt);
+  runAlong(p, dt, cfg);
   return 'running';
 }
