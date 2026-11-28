@@ -7,7 +7,9 @@ import { MOVE, PHYSICS } from '../shared/constants.js';
 import { box, rail, BOX_TYPES as T } from '../shared/maps/format.js';
 import { getMap } from '../shared/maps/index.js';
 import { createPlayer, stepPlayer, emptyInput } from '../shared/physics/player.js';
-import { climbMaps, searchClimb } from './helpers/climb-search.js';
+import { climbShapes, searchClimb } from './helpers/climb-search.js';
+import { treino } from '../shared/maps/treino.js';
+import { PAD_TO_HIGH } from '../shared/maps/sandbox.js';
 import { measureRail } from './helpers/rail-measure.js';
 
 const DT = PHYSICS.FIXED_DT;
@@ -27,15 +29,50 @@ test('A: corre nas paredes cinza do Sandbox e na parede externa', () => {
   assert.equal(p.wallrun.box.type, T.SOLID);
 });
 
-test('A: escalada continua abaixo de 5,5 m (parede isolada, canto e poço estreito)', () => {
-  // Medido nesta mudança (pés, m): isolada 3,87; canto 4,63; poço 3,31.
-  // Antes, só nas paredes cinza: isolada 3,13; canto 3,13; poço 4,97.
-  const maps = climbMaps(T.SOLID);
-  const heights = Object.fromEntries(Object.entries(maps).map(([k, m]) => [k, searchClimb(m).height]));
-  for (const [k, h] of Object.entries(heights)) assert.ok(h < 5.5, `${k}: ${h.toFixed(2)} m`);
-  // Parede cinza e ciano agora dão o mesmo resultado (a mesma regra).
-  const cyan = climbMaps(T.WALLRUN);
-  for (const k of Object.keys(maps)) assert.equal(searchClimb(cyan[k]).height, heights[k], k);
+test('A: escalada medida por formato de parede (poço e canto sobem mais: cada parede nova recarrega)', () => {
+  // Busca sorteada (mouse girando, Espaço em ritmos variados, dash), 700 tentativas por forma.
+  // Números de uma busca maior (10 mil ou mais tentativas por forma, pés, m), feita neste PR:
+  //   antes (só ciano): ~5,5 em todas as formas (mesma busca);
+  //   agora: isolada 7,8; canto 10,4; poço 1,5 m 10,9; poço 2 m 10,7; poço 3 m 13,2;
+  //   poço 4 m 11,3; U 14,5; quatro paredes 17,2.
+  // Tetos (com folga): 1 parede 9 m; 2 paredes 14,5 m; 3 paredes 16 m; 4 paredes 19 m.
+  // Se um teto estourar, a escalada aumentou: rever os mapas (paredes que não se pode escalar
+  // precisam passar dessa altura ou não formar poço/canto).
+  const shapes = climbShapes(T.SOLID);
+  const ceiling = { isolada: 9, canto: 14.5, 'poco 1.5 m': 14.5, 'poco 2 m': 14.5, 'poco 3 m': 14.5, 'poco 4 m': 14.5, U: 16, 'quatro paredes': 19 };
+  assert.deepEqual(Object.keys(shapes).sort(), Object.keys(ceiling).sort());
+  const h = {};
+  for (const [name, shape] of Object.entries(shapes)) {
+    h[name] = searchClimb(shape, { tries: 700, seed: 3 }).height;
+    assert.ok(h[name] < ceiling[name], `${name}: ${h[name].toFixed(2)} m (teto ${ceiling[name]} m)`);
+  }
+  // A busca precisa continuar forte (senão o teto acima não prova nada).
+  assert.ok(h.isolada > 6, `isolada: ${h.isolada.toFixed(2)}`);
+  assert.ok(h['poco 3 m'] > 9, `poço de 3 m: ${h['poco 3 m'].toFixed(2)}`);
+  assert.ok(h['quatro paredes'] > 10, `quatro paredes: ${h['quatro paredes'].toFixed(2)}`);
+  // Parede cinza e ciano dão o mesmo resultado (a mesma regra).
+  const cyan = climbShapes(T.WALLRUN);
+  assert.equal(searchClimb(cyan['poco 3 m'], { tries: 200, seed: 3 }).height, searchClimb(shapes['poco 3 m'], { tries: 200, seed: 3 }).height);
+});
+
+test('A: nos mapas de verdade a escalada não sai do mapa (Sandbox e treino)', () => {
+  const sandbox = getMap('sandbox');
+  const t = PAD_TO_HIGH.target;
+  const cases = [
+    [sandbox, 29, [...sandbox.spawns, { x: t.x, y: t.top, z: t.z }, { x: 26, y: 0, z: 26 }, { x: -26, y: 0, z: -26 }, { x: -22, y: 3, z: 0 }]],
+    [treino, 100, [...treino.spawns, { x: 96, y: 0, z: 96 }, { x: -96, y: 0, z: -96 }, { x: 57, y: 0, z: 57 }, { x: 77, y: 0, z: -9 }]],
+  ];
+  for (const [map, limit, starts] of cases) {
+    let best = 0;
+    for (const [i, s] of starts.entries()) {
+      const shape = { map, area: { x0: s.x - 2, x1: s.x + 2, z0: s.z - 2, z1: s.z + 2 } };
+      const r = searchClimb(shape, { tries: 50, seed: i + 1, startY: s.y ?? 0, limit });
+      assert.equal(r.escapes, 0, `${map.id}: saiu do mapa a partir de ${JSON.stringify(s)}`);
+      best = Math.max(best, r.height);
+    }
+    // Paredes externas: 20 m nos dois mapas; a escalada fica abaixo (Sandbox ~15,5 m, treino ~12,9 m).
+    assert.ok(best < 20 - 2, `${map.id}: altura máxima ${best.toFixed(2)} m`);
+  }
 });
 
 test('B: o corrimão mantém a velocidade de entrada (tabela do PR)', () => {

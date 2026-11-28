@@ -143,6 +143,10 @@ Seguir [`ESTETICA.md`](ESTETICA.md).
 
 ## F6: Mapas definitivos
 
+> **Lição da Fase 1 para os mapas (escalada).** Toda parede permite corrida na parede (decisão do dono). Cada parede *nova* do voo recarrega o pulo duplo e os pulos na parede. Por isso, cada parede diferente por perto soma até uns 6 m de escalada. Alturas medidas (pés): parede sozinha ~8 m; canto ou poço ~11 a 13 m; formato U ~14,5 m; quatro paredes ~17 m.
+> - **Parede que não pode ser escalada:** precisa passar de ~12 m (e de ~18 m se estiver num poço, num U ou numa caixa fechada), ou não pode formar poço nem canto com outras paredes.
+> - **Paredes externas:** confira com a busca de escalada (`tests/helpers/climb-search.js`) e com a varredura de saída (`tests/helpers/escape-search.js`).
+
 - [ ] **F6-01 Mapa Escadaria.** Poços de escada em vários níveis, corrimãos, frases nos degraus.
 - [ ] **F6-02 Mapa Galpão.** Fábrica abandonada, telhado furado, passarelas, Tinta UV no alto.
 - [ ] **F6-03 Mapa Metrô.** Estação desativada com túneis em loop para velocidade máxima.
