@@ -147,6 +147,11 @@ export const MOVE = Object.freeze({
   DASH_END_SPEED_KEEP: 0.7,
   /** Plataforma de salto sem direção: velocidade para cima ao pousar (m/s). Cerca de 6 m de altura. */
   PAD_SPEED: 17,
+  /**
+   * Limite absoluto da velocidade horizontal (m/s), valendo para tudo (pulos, deslize, dash,
+   * corrida na parede, air strafe). A queda tem o próprio limite (MAX_FALL_SPEED).
+   */
+  MAX_SPEED: 45,
   /** Corrimão: distância máxima dos pés ao trilho para grudar nele (m). */
   RAIL_SNAP_DIST: 0.6,
   /** Corrimão: aceleração da gravidade ao longo do trilho (m/s², multiplicada pela inclinação). */

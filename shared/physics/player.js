@@ -261,6 +261,7 @@ export function stepPlayer(p, input, map, dt) {
   // Dash no chão: a gravidade continua (o chão a anula), para seguir pisando: sobe degraus
   // e pisa em plataformas de salto durante o arranco. No ar, o dash não perde altura.
   const airDash = dashing && !p.onGround;
+  capHorizontalSpeed(p); // limite absoluto (F1-18)
   stepBody(p, map, dt, airDash || p.slam ? 0 : p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
   updateWall(p, map, dt); // detector de parede (F1-11)
   if (p.wallrun && p.onGround) endWallrun(p);
@@ -293,6 +294,16 @@ function launchFromPad(p, pad) {
   p.wallJumpsLeft = MOVE.WALL_JUMP_MAX;
   p.wallsUsed = [];
   p.events.push({ type: 'pad', launch: { ...p.vel } });
+}
+
+/** Limita a velocidade horizontal a MOVE.MAX_SPEED, mantendo a direção (F1-18). */
+export function capHorizontalSpeed(p) {
+  const h = Math.hypot(p.vel.x, p.vel.z);
+  if (h > MOVE.MAX_SPEED) {
+    const k = MOVE.MAX_SPEED / h;
+    p.vel.x *= k;
+    p.vel.z *= k;
+  }
 }
 
 /** Termina o deslize (mantém agachado; quem decide levantar é updateCrouch). */
