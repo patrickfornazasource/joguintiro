@@ -122,8 +122,9 @@ export const treino = Object.freeze({
     box(HALF + 0.5, (WALL_HEIGHT - WALL_BELOW) / 2, 0, 1, WALL_HEIGHT + WALL_BELOW, 2 * HALF + 2),
     box(0, CORE_HEIGHT / 2, 0, 2 * CORE, CORE_HEIGHT, 2 * CORE),
 
-    // 3: teto baixo (vão de 1,4 m: em pé não passa, deslizando passa)
-    box(30, 1.7, 77.5, 16, 0.6, 45),
+    // 3: teto baixo (vão de 1,4 m: em pé não passa, deslizando passa). O bloco sobe até a altura
+    // das paredes externas: não dá para passar por cima pulando.
+    box(30, (1.4 + WALL_HEIGHT) / 2, 77.5, 16, WALL_HEIGHT - 1.4, 45),
 
     // 4: corredor de corrida na parede
     ...corridor(),
@@ -139,10 +140,11 @@ export const treino = Object.freeze({
     // 8: plataformas de salto no fosso (rentes ao chão), cada uma lança até a próxima
     ...[-2, -12, -22, -32].map((x) => box(x, -0.1, -77, 4, 0.2, 8, T.PAD, { launch: { x: -10, y: 12, z: 0 } })),
 
-    // 9: escada (topo a 3 m) e corrimão descendo para +z
+    // 9: escada (topo a 3 m) e corrimão descendo para +z. O corrimão começa logo no topo da
+    // escada: sair pela beira direita em qualquer ponto do patamar pega o corrimão.
     ...stairsZ(-77, -45, 1, 12, 0.25, 3),
     box(-77, 1.5, -36, 4, 3, 6), // patamar (z de -39 a -33)
-    rail({ x: -79.4, y: 3.2, z: -34 }, { x: -79.4, y: 0.3, z: -14 }),
+    rail({ x: -79.4, y: 3.2, z: -38.5 }, { x: -79.4, y: 0.3, z: -14 }),
   ],
   // Um ponto de nascimento por estação (1 a 10), no começo de cada uma.
   spawns: [
@@ -161,20 +163,29 @@ export const treino = Object.freeze({
   signs: [
     { x: -86, y: 2.6, z: 77, yaw: EAST, title: '1 · Bunny hop', lines: ['Segure W + Espaço: os pulos emendam', 'sozinhos e a velocidade não cai.'] },
     { x: -19, y: 2.6, z: 71, yaw: EAST, title: '2 · Air strafe na curva', lines: ['Pule no fim e curve para a DIREITA:', 'segure D e vire o mouse. Espaço no ar ajuda.'] },
-    { x: 22, y: 3.2, z: 80, yaw: EAST, title: '3 · Deslize', lines: ['Corra e aperte C antes do teto baixo:', 'em pé não passa, deslizando passa.'] },
+    { x: 21.9, y: 2.6, z: 80, yaw: EAST, title: '3 · Deslize', lines: ['Corra e aperte C antes do túnel baixo:', 'em pé não passa, deslizando passa.'] },
     { x: 81.6, y: 3.6, z: 40, yaw: SOUTH, title: '4 · Corrida na parede', lines: ['Encostado à esquerda, corra, pule e puxe A.', 'Na parede, espere um instante e Espaço.'] },
     { x: 82.5, y: 2.6, z: -8.5, yaw: Math.atan2(-5.5, 9), title: '5 · Pulo na parede', lines: ['Entre no vão e pule. Encostado: Espaço', 'de novo (até 3). Suba na plataforma.'] },
     { x: 72, y: 5.2, z: -24, yaw: SOUTH, title: '6 · Slam e pulo de slam', lines: ['Suba a torre e caia no X amarelo com C.', 'Ao bater: Espaço, e Espaço no ar. Vá para a direita.'] },
     { x: 56, y: 2.6, z: -77, yaw: WEST, title: '7 · Dash', lines: ['O vão é grande demais para um pulo só.', 'Pule, Espaço no ar (duplo) e Shift (dash).'] },
     { x: 8, y: 2.6, z: -77, yaw: WEST, title: '8 · Plataformas de salto', lines: ['Pise na plataforma verde.', 'Uma lança na outra até o outro lado.'] },
-    { x: -77, y: 2.6, z: -51, yaw: NORTH, title: '9 · Escada com corrimão', lines: ['Suba a escada e, no alto, saia pela', 'beira DIREITA andando: desce o corrimão.'] },
+    { x: -77, y: 2.6, z: -51, yaw: NORTH, title: '9 · Escada com corrimão', lines: ['Suba a escada segurando W e, no alto,', 'puxe D (direita): você desce o corrimão.'] },
     { x: -86, y: 2.6, z: 62, yaw: EAST, title: '10 · Circuito completo', lines: ['Saia da faixa verde: o tempo começa.', 'Dê a volta toda até a faixa vermelha.'] },
   ],
-  // Cronômetro do circuito: sair da faixa de largada começa; entrar na de chegada termina.
+  // Cronômetro do circuito: sair da faixa de largada começa; entrar na de chegada termina, mas só
+  // depois de passar, na ordem, pelos corredores leste (estações 4 a 6), sul (7 e 8) e oeste (9).
   timer: {
     start: { minX: -100, maxX: -84, minZ: 55, maxZ: 100 },
     finish: { minX: -100, maxX: -55, minZ: 38, maxZ: 52 },
+    checkpoints: [
+      { minX: 55, maxX: 100, minZ: -55, maxZ: 55 }, // corredor leste
+      { minX: -55, maxX: 55, minZ: -100, maxZ: -55 }, // corredor sul
+      { minX: -100, maxX: -55, minZ: -55, maxZ: 30 }, // corredor oeste
+    ],
   },
-  // Marcas visuais no chão (sem colisão): o X do slam.
-  marks: [{ ...TREINO_SLAM.spot, color: '#ffd400' }],
+  // Marcas visuais no chão (sem colisão): o X do slam e a faixa na entrada do túnel do deslize.
+  marks: [
+    { ...TREINO_SLAM.spot, color: '#ffd400' },
+    { minX: 19, maxX: 22, minZ: 55, maxZ: 100, color: '#00e5ff' },
+  ],
 });

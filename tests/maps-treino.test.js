@@ -12,6 +12,7 @@ import { searchEscapes } from './helpers/escape-search.js';
 const DT = PHYSICS.FIXED_DT;
 const input = (over = {}) => ({ ...emptyInput(), ...over });
 const has = (p, type) => p.events.some((e) => e.type === type);
+const EAST_YAW = M.spawns[2].yaw; // olhando para +x
 
 /** Jogador parado no ponto de nascimento da estação k (1 a 10). */
 function atStation(k) {
@@ -157,24 +158,36 @@ test('cair num fosso: renasce na estação mais perto (e R faz o mesmo)', () => 
   assert.deepEqual(me.player.pos, { x: M.spawns[8].x, y: M.spawns[8].y, z: M.spawns[8].z }, 'R: estação 9');
 });
 
-test('cronômetro: sair da largada começa, chegar termina e guarda o melhor tempo', () => {
+test('cronômetro: sair da largada começa, passar pelos corredores e chegar termina e guarda o melhor tempo', () => {
   const data = new Map();
   const storage = { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) };
   const t = createCircuitTimer(M.timer, { mapId: 'treino', storage });
   const startPos = { x: -92, y: 0, z: 77 };
   const outside = { x: -70, y: 0, z: 77 };
+  const east = { x: 77, y: 0, z: 0 };
+  const south = { x: 0, y: 0, z: -77 };
+  const west = { x: -77, y: 0, z: -20 };
   const finishPos = { x: -77, y: 0, z: 45 };
+  const lap = (t0, tEnd) => {
+    t.update(startPos, t0);
+    t.update(outside, t0 + 1);
+    t.update(east, t0 + 10);
+    t.update(south, t0 + 20);
+    t.update(west, t0 + 30);
+    return t.update(finishPos, tEnd);
+  };
   assert.equal(t.update(startPos, 0), null);
   assert.equal(t.state, 'armed');
   assert.deepEqual(t.update(outside, 1), { type: 'start' });
+  t.update(east, 10);
+  t.update(south, 20);
+  t.update(west, 30);
   assert.equal(t.update(finishPos, 61.5).type, 'finish');
   assert.equal(t.elapsed, 60.5);
   assert.equal(t.best, 60.5);
   assert.equal(data.get(BEST_KEY_PREFIX + 'treino'), '60.5');
   // Segunda volta mais lenta: não troca o recorde.
-  t.update(startPos, 100);
-  t.update(outside, 101);
-  const slow = t.update(finishPos, 200);
+  const slow = lap(100, 200);
   assert.equal(slow.record, false);
   assert.equal(t.best, 60.5);
   // O recorde salvo volta ao abrir de novo.
@@ -183,8 +196,89 @@ test('cronômetro: sair da largada começa, chegar termina e guarda o melhor tem
   // Chegar sem ter largado não conta.
   const fresh = createCircuitTimer(M.timer, { mapId: 'x', storage });
   assert.equal(fresh.update(finishPos, 5), null);
-  assert.equal(formatTime(62.346), '1:02.35');
-  assert.equal(formatTime(9.5), '9.50');
+  assert.equal(formatTime(62.346), '1:02,35');
+  assert.equal(formatTime(9.5), '9,50');
+});
+
+test('cronômetro: chegar sem passar pelas estações não conta (nem salva recorde)', () => {
+  const data = new Map();
+  const storage = { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) };
+  // O atalho do Revisor: sair da faixa verde para o sul e entrar logo na vermelha (0,33 s).
+  const u = createCircuitTimer(M.timer, { mapId: 'treino', storage });
+  u.update({ x: -92, y: 0, z: 60 }, 0);
+  assert.deepEqual(u.update({ x: -92, y: 0, z: 53 }, 0.2), { type: 'start' });
+  assert.equal(u.update({ x: -92, y: 0, z: 45 }, 0.33), null, 'chegada sem passar pelos corredores não termina');
+  assert.equal(u.state, 'running');
+  assert.equal(u.best, null);
+  assert.equal(data.size, 0, 'nada salvo');
+  // Fora de ordem também não vale: oeste antes de leste e sul.
+  u.update({ x: -77, y: 0, z: -20 }, 5);
+  u.update({ x: 77, y: 0, z: 0 }, 10);
+  u.update({ x: 0, y: 0, z: -77 }, 20);
+  assert.equal(u.update({ x: -92, y: 0, z: 45 }, 30), null, 'faltou o oeste depois do sul');
+  u.update({ x: -77, y: 0, z: -20 }, 40);
+  assert.equal(u.update({ x: -92, y: 0, z: 45 }, 50).type, 'finish');
+});
+
+test('estação 3: por cima do teto baixo não passa (pulo, duplo e dash, sem deslizar)', () => {
+  let passed = 0;
+  let tries = 0;
+  // Começa depois dos fossos da estação 2 (x > 12), correndo a 12 ou 20 m/s.
+  for (let jumpX = 14; jumpX <= 21.5; jumpX += 0.5) {
+    for (const z of [56, 65, 77.5, 90, 99]) {
+      for (const [useDash, speed] of [[false, 12], [true, 12], [false, 20], [true, 20]]) {
+        tries++;
+        const p = createPlayer({ x: 13, y: 0, z, yaw: EAST_YAW });
+        p.vel = { x: speed, y: 0, z: 0 };
+        let jumped = false;
+        let doubled = false;
+        let dashed = false;
+        for (let i = 0; i < 4 / DT; i++) {
+          let inp = input({ moveZ: 1, yaw: EAST_YAW });
+          if (!jumped && p.onGround && p.pos.x >= jumpX) {
+            jumped = true;
+            inp = input({ moveZ: 1, yaw: EAST_YAW, jump: true, jumpPressed: true });
+          } else if (jumped && !doubled && p.vel.y < 0.5) {
+            doubled = true;
+            inp = input({ moveZ: 1, yaw: EAST_YAW, jump: true, jumpPressed: true });
+          } else if (useDash && doubled && !dashed) {
+            dashed = true;
+            inp = input({ moveZ: 1, yaw: EAST_YAW, dashPressed: true });
+          }
+          stepPlayer(p, inp, M, DT);
+          assert.equal(p.sliding, false);
+          if (p.pos.x > 38) break;
+        }
+        if (p.pos.x > 38) passed++;
+      }
+    }
+  }
+  assert.equal(passed, 0, `${passed} de ${tries} passaram sem deslizar`);
+  // Deslizando, passa.
+  const { p, yaw } = atStation(3);
+  p.vel = { x: 12, y: 0, z: 0 };
+  let slid = false;
+  for (let i = 0; i < 6 / DT && p.pos.x <= 38.5; i++) {
+    const press = !slid && p.pos.x > 19;
+    if (press) slid = true;
+    stepPlayer(p, input({ moveZ: 1, yaw, crouch: slid, crouchPressed: press }), M, DT);
+  }
+  assert.ok(p.pos.x > 38.5, `deslizando atravessa: x = ${p.pos.x}`);
+});
+
+test('estação 9: roteiro simples (W na escada, no alto W + D) desce o corrimão', () => {
+  for (const pullAt of [-38.9, -38.5, -37, -35]) {
+    const { p, yaw } = atStation(9);
+    let rode = false;
+    for (let i = 0; i < 10 / DT; i++) {
+      const right = p.pos.y > 2.9 && p.pos.z >= pullAt;
+      stepPlayer(p, input({ moveZ: 1, moveX: right ? 1 : 0, yaw }), M, DT);
+      if (has(p, 'railStart')) rode = true;
+      if (has(p, 'railEnd')) break;
+    }
+    assert.ok(rode, `puxando D em z = ${pullAt}: pegou o corrimão`);
+    assert.ok(p.pos.z > -16, `chegou ao fim do corrimão: z = ${p.pos.z.toFixed(2)}`);
+  }
 });
 
 test('nada sai do mapa a partir das estações (varredura: pulo, duplo, dash, pulo na parede)', () => {

@@ -1,6 +1,7 @@
 // Cronômetro do circuito completo (F1-19).
 // Lógica sem DOM (testável): sair da faixa de largada começa; entrar na faixa de chegada termina
 // e guarda o melhor tempo no localStorage. Voltar à largada antes de terminar recomeça.
+// Pontos de passagem (zones.checkpoints): a chegada só vale depois de passar por todos, na ordem.
 // O mostrador (createTimerDisplay) fica no alto da tela, no meio.
 
 /** Chave do localStorage para o melhor tempo, por mapa. */
@@ -26,6 +27,8 @@ export function createCircuitTimer(zones, { mapId, storage = null } = {}) {
   let startAt = 0;
   let last = null; // último tempo terminado (s)
   let now = 0;
+  const checkpoints = zones.checkpoints ?? [];
+  let nextCheckpoint = 0; // índice do próximo ponto de passagem a visitar
 
   return {
     /**
@@ -42,9 +45,14 @@ export function createCircuitTimer(zones, { mapId, storage = null } = {}) {
       if (state === 'armed') {
         state = 'running';
         startAt = t;
+        nextCheckpoint = 0;
         return { type: 'start' };
       }
-      if (state === 'running' && inside(zones.finish, pos)) {
+      if (state === 'running' && nextCheckpoint < checkpoints.length && inside(checkpoints[nextCheckpoint], pos)) {
+        nextCheckpoint++;
+      }
+      // Chegada antes de passar por todos os pontos de passagem não conta (a volta segue correndo).
+      if (state === 'running' && nextCheckpoint === checkpoints.length && inside(zones.finish, pos)) {
         state = 'finished';
         last = t - startAt;
         const record = best === null || last < best;
@@ -72,18 +80,23 @@ export function createCircuitTimer(zones, { mapId, storage = null } = {}) {
       if (state === 'running') return now - startAt;
       return last;
     },
+    /** Quantos pontos de passagem já foram visitados nesta volta, e o total. */
+    get progress() {
+      return { done: state === 'running' || state === 'finished' ? nextCheckpoint : 0, total: checkpoints.length };
+    },
     get best() {
       return best;
     },
   };
 }
 
-/** Formata segundos como "1:02.35" ou "42.10". */
+/** Formata segundos como "1:02,35" ou "42,10" (vírgula decimal, como em português). */
 export function formatTime(s) {
   if (s === null || s === undefined) return '-';
   const m = Math.floor(s / 60);
   const rest = s - m * 60;
-  return m > 0 ? `${m}:${rest.toFixed(2).padStart(5, '0')}` : rest.toFixed(2);
+  const text = m > 0 ? `${m}:${rest.toFixed(2).padStart(5, '0')}` : rest.toFixed(2);
+  return text.replace('.', ',');
 }
 
 /** Mostrador do cronômetro no alto da tela (só aparece em mapas com circuito). */
@@ -107,7 +120,11 @@ export function createTimerDisplay({ doc = document } = {}) {
     el,
     show(timer) {
       const best = `melhor: ${formatTime(timer.best)}`;
-      if (timer.state === 'running') el.textContent = `Circuito: ${formatTime(timer.elapsed)}  (${best})`;
+      if (timer.state === 'running') {
+        const { done, total } = timer.progress;
+        const missing = done < total ? `  falta passar por ${total - done} corredor(es)` : '';
+        el.textContent = `Circuito: ${formatTime(timer.elapsed)}  (${best})${missing}`;
+      }
       else if (timer.state === 'finished') el.textContent = `Chegada: ${formatTime(timer.elapsed)}  (${best})`;
       else if (timer.state === 'armed') el.textContent = `Saia da faixa verde para começar  (${best})`;
       else el.textContent = timer.best === null ? '' : best;
