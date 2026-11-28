@@ -197,3 +197,66 @@ test('parede lembrada: o lado é recalculado com o olhar atual (nota da revisão
   assert.equal(p.wall.side, 'left', 'lado de acordo com o olhar atual');
   assert.deepEqual(p.wall.normal, { x: -1, y: 0, z: 0 });
 });
+
+test('parede longa (200 m): no máximo 1,5 s seguidos na mesma parede', () => {
+  // Ajuste da revisão: antes, saindo aos 1,5 s, a "cola" mantinha o contato e a corrida
+  // recomeçava na mesma parede 0,3 s depois (3 entradas, 4,5 s na parede).
+  const wall200 = box(2.25, 0, 0, 0.5, 60, 200, T.WALLRUN);
+  const map = mapWith(wall200);
+  const p = createPlayer({ x: 2 - R - 0.3, y: 30, z: 90, yaw: 0 });
+  p.vel = { x: 2, y: 0, z: -12 };
+  let starts = 0;
+  let onWall = 0;
+  let longest = 0;
+  let current = 0;
+  for (let i = 0; i < 6 / DT; i++) {
+    stepPlayer(p, input({ moveZ: 1, yaw: 0 }), map, DT); // só segurando W
+    if (has(p, 'wallrunStart')) starts++;
+    if (p.wallrun) {
+      onWall += DT;
+      current += DT;
+      longest = Math.max(longest, current);
+    } else current = 0;
+  }
+  assert.equal(starts, 1, `entradas na mesma parede: ${starts}`);
+  assert.ok(onWall <= MOVE.WALLRUN_MAX_TIME + DT, `tempo na parede: ${onWall.toFixed(2)} s`);
+  assert.ok(longest <= MOVE.WALLRUN_MAX_TIME + DT);
+});
+
+test('depois de esgotar o tempo, a mesma parede volta a valer ao tocar o chão', () => {
+  const wall200 = box(2.25, 0, 0, 0.5, 60, 200, T.WALLRUN);
+  const map = { id: 't', name: 't', boxes: [box(0, -0.5, 0, 400, 1, 400), wall200], spawns: [] };
+  const p = createPlayer({ x: 2 - R - 0.3, y: 6, z: 90, yaw: 0 });
+  p.vel = { x: 2, y: 0, z: -12 };
+  for (let i = 0; i < 2 / DT && !(p.wallrunLast && p.wallrunLast.exhausted); i++) stepPlayer(p, input({ moveZ: 1, yaw: 0 }), map, DT);
+  assert.ok(p.wallrunLast.exhausted, 'esgotou o tempo');
+  for (let i = 0; i < 3 / DT && !p.onGround; i++) stepPlayer(p, input({ moveZ: 1, yaw: 0 }), map, DT);
+  assert.equal(p.onGround, true, 'tocou o chão');
+  stepPlayer(p, input({ moveZ: 1, yaw: 0 }), map, DT);
+  assert.equal(p.wallrunLast.exhausted, false, 'liberada');
+  // pula de novo, encostado e correndo: volta a grudar
+  p.vel.z = -12;
+  stepPlayer(p, input({ moveZ: 1, yaw: 0, jump: true, jumpPressed: true }), map, DT);
+  let again = false;
+  for (let i = 0; i < 30 && !again; i++) {
+    stepPlayer(p, input({ moveZ: 1, yaw: 0 }), map, DT);
+    again = !!p.wallrun;
+  }
+  assert.ok(again, 'grudou de novo na mesma parede');
+});
+
+test('depois de esgotar o tempo, grudar em outra parede vale na hora (e libera a primeira)', () => {
+  const a = box(2.25, 0, 0, 0.5, 60, 200, T.WALLRUN);
+  const b = box(-2.25, 0, 0, 0.5, 60, 200, T.WALLRUN);
+  const map = mapWith(a, b);
+  const p = createPlayer({ x: 2 - R - 0.3, y: 30, z: 90, yaw: 0 });
+  p.vel = { x: 2, y: 0, z: -12 };
+  for (let i = 0; i < 2 / DT && !(p.wallrunLast && p.wallrunLast.exhausted); i++) stepPlayer(p, input({ moveZ: 1, yaw: 0 }), map, DT);
+  assert.ok(p.wallrunLast.exhausted);
+  p.pos.x = -2 + R + 0.1; // leva para perto da outra parede
+  p.vel.x = -3;
+  for (let i = 0; i < 10 && !p.wallrun; i++) stepPlayer(p, input({ moveZ: 1, yaw: 0 }), map, DT);
+  assert.ok(p.wallrun, 'outra parede: grudou');
+  assert.equal(p.wallrun.box, b);
+  assert.equal(p.wallrunLast, null, 'a primeira foi liberada');
+});

@@ -7,6 +7,9 @@
 // reduzida (aplicada em stepBody), ganho de velocidade até WALLRUN_MAX_SPEED.
 // Sair: tempo esgotado, velocidade baixa, fim da parede, tecla para longe dela, pousar,
 // ou pular (empurra para fora e para cima, mantendo a velocidade ao longo da parede).
+// Voltar à mesma parede: depois de sair por TEMPO ou VELOCIDADE BAIXA, só depois de tocar
+// o chão ou de grudar em outra parede (o limite de ~1,5 s não pode ser renovado na mesma
+// parede). Nas outras saídas (pulo, tecla, fim da parede), após WALLRUN_REATTACH_DELAY.
 import { MOVE } from '../constants.js';
 import { BOX_TYPES as T } from '../maps/format.js';
 import { wishDir } from './move.js';
@@ -17,10 +20,15 @@ function alongWall(vel, n) {
   return { x: vel.x - into * n.x, z: vel.z - into * n.z };
 }
 
-/** Termina a corrida na parede (lembra a parede para o tempo de espera). */
-export function endWallrun(p) {
+/**
+ * Termina a corrida na parede (lembra a parede para a regra de voltar a ela).
+ * @param {object} p jogador
+ * @param {boolean} [exhausted] saiu por tempo ou velocidade baixa: a mesma parede fica
+ *   bloqueada até tocar o chão ou grudar em outra parede
+ */
+export function endWallrun(p, exhausted = false) {
   if (!p.wallrun) return;
-  p.wallrunLast = { box: p.wallrun.box, age: 0 };
+  p.wallrunLast = { box: p.wallrun.box, age: 0, exhausted };
   p.wallrun = null;
   p.events.push({ type: 'wallrunEnd' });
 }
@@ -45,7 +53,10 @@ function runAlong(p, dt) {
  *   'jumped' pulou para fora neste passo, null fora da parede
  */
 export function updateWallrun(p, input, dt) {
-  if (p.wallrunLast) p.wallrunLast.age += dt;
+  if (p.wallrunLast) {
+    p.wallrunLast.age += dt;
+    if (p.onGround) p.wallrunLast.exhausted = false; // tocar o chão libera a parede de novo
+  }
 
   const wish = wishDir(input);
   const amount = Math.hypot(wish.x, wish.z);
@@ -69,14 +80,9 @@ export function updateWallrun(p, input, dt) {
     const touching = p.wall && p.wall.age === 0 && p.wall.box === w.box;
     const t = alongWall(p.vel, n);
     const awayFromWall = amount > 0 && (wish.x * n.x + wish.z * n.z) / amount > MOVE.WALLRUN_RELEASE_DOT;
-    if (
-      p.onGround ||
-      !touching ||
-      w.time >= MOVE.WALLRUN_MAX_TIME ||
-      Math.hypot(t.x, t.z) < MOVE.WALLRUN_MIN_SPEED ||
-      awayFromWall
-    ) {
-      endWallrun(p);
+    const exhausted = w.time >= MOVE.WALLRUN_MAX_TIME || Math.hypot(t.x, t.z) < MOVE.WALLRUN_MIN_SPEED;
+    if (p.onGround || !touching || exhausted || awayFromWall) {
+      endWallrun(p, exhausted);
       return null;
     }
     runAlong(p, dt);
@@ -86,13 +92,15 @@ export function updateWallrun(p, input, dt) {
   // Entrar.
   const wall = p.wall;
   if (p.onGround || !wall || wall.age !== 0 || wall.type !== T.WALLRUN) return null;
-  const sameWallTooSoon = p.wallrunLast && p.wallrunLast.box === wall.box
-    && p.wallrunLast.age < MOVE.WALLRUN_REATTACH_DELAY;
-  if (sameWallTooSoon) return null;
+  const last = p.wallrunLast;
+  const sameWallBlocked = last && last.box === wall.box
+    && (last.exhausted || last.age < MOVE.WALLRUN_REATTACH_DELAY);
+  if (sameWallBlocked) return null;
   const t = alongWall(p.vel, wall.normal);
   if (Math.hypot(t.x, t.z) < MOVE.WALLRUN_MIN_SPEED) return null; // devagar ou de frente
 
   p.wallrun = { box: wall.box, normal: { ...wall.normal }, time: 0 };
+  p.wallrunLast = null; // grudar em outra parede libera a anterior
   p.vel.y = 0; // entra sem subir nem cair: depois só a gravidade reduzida
   p.jumpsLeft = MOVE.AIR_JUMPS; // correr na parede recarrega o pulo duplo (GDD)
   p.jumpBuffer = 0;
