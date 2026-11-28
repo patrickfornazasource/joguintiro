@@ -16,8 +16,9 @@
 import { MOVE, PLAYER } from '../constants.js';
 import { moveAndCollide, fitsWithHeight } from './collide.js';
 import { updateWall } from './walls.js';
-import { updateWallrun, endWallrun as endWallrunOnLanding } from './wallrun.js';
-import { wishDir, accelerate, airAccelerate, applyFriction, redirectHorizontal } from './move.js';
+import { updateWallrun, endWallrun } from './wallrun.js';
+import { startDash, stepDash, rechargeDash } from './dash.js';
+import { wishDir, forwardOf, accelerate, airAccelerate, applyFriction, redirectHorizontal } from './move.js';
 
 /** Entrada vazia (nada apertado), útil como padrão e em testes. */
 export function emptyInput() {
@@ -97,7 +98,11 @@ export function createPlayer(spawn) {
     /** Tempo desde o último contato com parede (s). */
     wallAge: Infinity,
     /** Cargas de dash disponíveis (F1-15). */
-    dashCharges: 0,
+    dashCharges: MOVE.DASH_CHARGES,
+    /** Tempo acumulado para recarregar a próxima carga de dash (s). */
+    dashRecharge: 0,
+    /** Dash em andamento: { dir, speed, remaining, before }, ou null. */
+    dash: null,
     /** Estado de movimento: 'air', 'ground', 'slide', 'wallrun', 'slam'... (F1-06 em diante). */
     state: 'air',
   };
@@ -124,16 +129,28 @@ export function stepPlayer(p, input, map, dt) {
   // Pula se: está no chão (ou acabou de sair da borda) E apertou agora ou há pouco,
   // ou está no chão segurando o pulo (bunny hop: pula de novo ao pousar).
   // Corrida na parede (F1-12): entrar, continuar, sair ou pular para fora. Tem prioridade.
-  const wallrunning = updateWallrun(p, input, dt); // 'running' | 'jumped' | null
+  // Dash provisório (F1-15): Shift com carga, fora do slam. Interrompe a corrida na parede.
+  rechargeDash(p, dt);
+  if (input.dashPressed && !p.dash && !p.slam && p.dashCharges >= 1) {
+    if (p.wallrun) endWallrun(p);
+    const w = wishDir(input);
+    const len = Math.hypot(w.x, w.z);
+    const dashDir = len > 0 ? { x: w.x / len, y: 0, z: w.z / len } : forwardOf(input.yaw); // sem tecla: para frente
+    p.dashCharges -= 1;
+    startDash(p, dashDir, MOVE.DASH_SPEED, MOVE.DASH_TIME);
+  }
+  const dashing = stepDash(p, dt); // durante o dash, a velocidade é dele
+
+  const wallrunning = dashing ? null : updateWallrun(p, input, dt); // 'running' | 'jumped' | null
   const onWall = wallrunning !== null;
 
   const canJump = p.onGround || p.coyote > 0;
   const wantsJump = p.jumpBuffer > 0 || (input.jump && p.onGround);
-  const jumping = !onWall && !p.slam && canJump && wantsJump;
+  const jumping = !dashing && !onWall && !p.slam && canJump && wantsJump;
 
   // Golpe no chão (F1-14): agachar no ar (fora da corrida na parede) despenca em linha reta.
   p.slamJumpWindow = Math.max(0, p.slamJumpWindow - dt);
-  if (!onWall && !jumping && !p.onGround && !p.slam && input.crouchPressed) {
+  if (!dashing && !onWall && !jumping && !p.onGround && !p.slam && input.crouchPressed) {
     p.slam = { startY: p.pos.y };
     p.events.push({ type: 'slamStart' });
   }
@@ -144,12 +161,12 @@ export function stepPlayer(p, input, map, dt) {
   if (p.lastWallJump) p.lastWallJump.age += dt;
   const sameWallTooSoon = p.wall && p.lastWallJump && p.lastWallJump.box === p.wall.box
     && p.lastWallJump.age < MOVE.WALL_JUMP_SAME_WALL_DELAY;
-  const wallJumping = !onWall && !p.slam && !jumping && !p.onGround && input.jumpPressed
+  const wallJumping = !dashing && !onWall && !p.slam && !jumping && !p.onGround && input.jumpPressed
     && p.wall !== null && !sameWallTooSoon && p.wallJumpsLeft > 0;
 
   // Pulo duplo (F1-09): recarrega no chão (e ao entrar na parede); no ar, só com um aperto novo.
   if (p.onGround) p.jumpsLeft = MOVE.AIR_JUMPS;
-  const doubleJumping = !onWall && !p.slam && !jumping && !wallJumping && !p.onGround && input.jumpPressed
+  const doubleJumping = !dashing && !onWall && !p.slam && !jumping && !wallJumping && !p.onGround && input.jumpPressed
     && p.jumpsLeft > 0;
 
   // Deslize e agachar (F1-10).
@@ -161,11 +178,10 @@ export function stepPlayer(p, input, map, dt) {
   const wish = wishDir(input);
   const amount = Math.hypot(wish.x, wish.z); // 0 a 1 (teclado: 0 ou 1)
   const dir = amount > 0 ? { x: wish.x / amount, y: 0, z: wish.z / amount } : null;
-  if (onWall) {
+  if (dashing) {
+    // O dash já cuidou da velocidade neste passo.
+  } else if (onWall) {
     // A corrida na parede já cuidou da velocidade neste passo.
-  } else if (p.slam) {
-    // Slam: despenca em linha reta, sem velocidade horizontal e sem controle.
-    p.vel = { x: 0, y: -MOVE.SLAM_SPEED, z: 0 };
   } else if (wallJumping) {
     // Empurra para longe da parede e para cima, mantendo a velocidade ao longo dela.
     const n = p.wall.normal;
@@ -182,6 +198,9 @@ export function stepPlayer(p, input, map, dt) {
     p.wall = null;
     p.wallAge = Infinity;
     p.events.push({ type: 'wallJump' });
+  } else if (p.slam) {
+    // Slam: despenca em linha reta, sem velocidade horizontal e sem controle.
+    p.vel = { x: 0, y: -MOVE.SLAM_SPEED, z: 0 };
   } else if (p.sliding && !jumping) {
     // Deslize: atrito baixo e sem aceleração pelas teclas, só um leve direcionamento.
     const v = applyFriction(p.vel, MOVE.SLIDE_FRICTION, 0, dt);
@@ -220,9 +239,10 @@ export function stepPlayer(p, input, map, dt) {
   }
 
   // Slam cai a velocidade constante (sem gravidade somando); corrida na parede, gravidade reduzida.
-  stepBody(p, map, dt, p.slam ? 0 : p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
+  // Dash e slam: sem gravidade somando; corrida na parede: gravidade reduzida.
+  stepBody(p, map, dt, dashing || p.slam ? 0 : p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
   updateWall(p, map, dt); // detector de parede (F1-11)
-  if (p.wallrun && p.onGround) endWallrunOnLanding(p);
+  if (p.wallrun && p.onGround) endWallrun(p);
   if (p.slam && p.onGround) {
     // Bateu: registra a altura da queda e abre a janela do pulo de slam.
     const height = Math.max(0, p.slam.startY - p.pos.y);
@@ -231,7 +251,7 @@ export function stepPlayer(p, input, map, dt) {
     p.slamJumpWindow = MOVE.SLAM_JUMP_WINDOW;
     p.events.push({ type: 'slamLand', height });
   }
-  p.state = p.slam ? 'slam' : p.wallrun ? 'wallrun' : p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
+  p.state = dashing ? 'dash' : p.slam ? 'slam' : p.wallrun ? 'wallrun' : p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
   return p;
 }
 
