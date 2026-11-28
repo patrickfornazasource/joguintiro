@@ -9,6 +9,8 @@ import { createMapMeshes } from './world/mapRenderer.js';
 import { createLocalPlayer, resolveSensitivity, resolveFov } from './player/localPlayer.js';
 import { createStartScreen } from './ui/startScreen.js';
 import { createHud } from './ui/hud.js';
+import { createSigns, createFloorMarks } from './world/signs.js';
+import { createCircuitTimer, createTimerDisplay } from './ui/timer.js';
 
 const canvas = document.getElementById('game');
 
@@ -26,6 +28,8 @@ if (mapId && mapId !== map.id) console.warn(`Mapa "${mapId}" não existe; usando
 const check = validateMap(map);
 if (!check.ok) throw new Error(`Mapa "${map.id}" inválido: ${check.errors.join('; ')}`);
 scene.add(createMapMeshes(map));
+scene.add(createSigns(map)); // placas com o nome de cada estação (mapa de treino)
+scene.add(createFloorMarks(map)); // marcas no chão (X do slam, faixas do cronômetro)
 console.info(`LUZ NEGRA: mapa "${map.name}" (${map.boxes.length} caixas)`);
 
 // Câmera em primeira pessoa (posição e direção vêm do jogador local a cada quadro).
@@ -73,11 +77,23 @@ const sensitivity = resolveSensitivity(window.location.search, storage);
 const fovBase = resolveFov(window.location.search, storage);
 
 // Jogador local no primeiro ponto de nascimento do mapa.
-const me = createLocalPlayer({ map, sensitivity, fovBase });
+// ?spawn=N começa na estação N (1 = primeiro ponto de nascimento do mapa).
+const spawnParam = Number(new URLSearchParams(window.location.search).get('spawn'));
+const spawnIndex = Number.isInteger(spawnParam) && spawnParam >= 1 && spawnParam <= map.spawns.length ? spawnParam - 1 : 0;
+const me = createLocalPlayer({ map, sensitivity, fovBase, spawnIndex });
 // Em desenvolvimento, o jogador local fica acessível no console (depuração e testes visuais).
 if (import.meta.env.DEV) window.__me = me;
 createStartScreen({ canvas });
 const hud = createHud();
+// Cronômetro do circuito (só em mapas com faixas de largada e chegada).
+const circuit = map.timer ? createCircuitTimer(map.timer, { mapId: map.id, storage }) : null;
+const timerDisplay = circuit ? createTimerDisplay() : null;
+// R: volta para a estação (ponto de nascimento) mais perto.
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'KeyR' || e.repeat || !input.isLocked()) return;
+  me.respawnNearest();
+  circuit?.reset();
+});
 const deg = (rad) => Math.round((rad * 180) / Math.PI);
 let lastFrame = performance.now();
 
@@ -125,6 +141,10 @@ const loop = createLoop({
       camera.updateProjectionMatrix();
     }
     hud.update(me.speed);
+    if (circuit) {
+      circuit.update(me.player.pos, now / 1000);
+      timerDisplay.show(circuit);
+    }
     renderer.render(scene, camera);
     const p = me.player;
     debug.set('posição', p.pos);

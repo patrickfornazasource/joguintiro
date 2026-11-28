@@ -1,5 +1,7 @@
 // Captura de tela automática do jogo.
-// Uso: npm run shot [-- --url-params "?mapa=treino"] [-- --out nome.png]
+// Uso: npm run shot [-- --url-params "?mapa=treino"] [-- --out nome.png] [-- --sem-clique]
+// Por padrão, clica no jogo antes da foto (como uma pessoa: a tela "Clique para jogar" some).
+// Com --sem-clique, fotografa a tela inicial.
 // 1. Faz o build. 2. Sobe o vite preview numa porta livre.
 // 3. Abre a página em 1280x720 e espera window.__READY === true (até 10 s).
 // 4. Salva a imagem em artifacts/ e encerra tudo.
@@ -14,14 +16,16 @@ import { chromium } from 'playwright';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const READY_TIMEOUT_MS = 10_000;
 const VIEWPORT = { width: 1280, height: 720 };
+const CLICK_SETTLE_MS = 400; // depois do clique, tempo para a tela inicial sumir e a imagem assentar
 
 function parseArgs(argv) {
-  const opts = { urlParams: '', out: 'shot.png' };
+  const opts = { urlParams: '', out: 'shot.png', click: true };
   for (let i = 0; i < argv.length; i++) {
     const [key, inline] = argv[i].split(/=(.*)/s);
     const value = () => (inline !== undefined ? inline : argv[++i]);
     if (key === '--url-params') opts.urlParams = value() ?? '';
     else if (key === '--out') opts.out = value() ?? opts.out;
+    else if (key === '--sem-clique') opts.click = false;
     else throw new Error(`Opção desconhecida: ${argv[i]}`);
   }
   if (opts.urlParams && !opts.urlParams.startsWith('?')) opts.urlParams = `?${opts.urlParams}`;
@@ -91,6 +95,12 @@ async function main() {
       await page.waitForFunction(() => window.__READY === true, null, { timeout: READY_TIMEOUT_MS });
     } catch {
       console.warn(`Aviso: window.__READY não ficou true em ${READY_TIMEOUT_MS / 1000} s. Capturando mesmo assim.`);
+    }
+
+    if (opts.click) {
+      // Clica no centro para entrar no jogo (some a tela inicial) e espera alguns quadros.
+      await page.mouse.click(VIEWPORT.width / 2, VIEWPORT.height / 2);
+      await page.waitForTimeout(CLICK_SETTLE_MS);
     }
 
     fs.mkdirSync(path.dirname(opts.out), { recursive: true });

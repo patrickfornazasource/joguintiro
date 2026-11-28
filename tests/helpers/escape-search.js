@@ -9,10 +9,12 @@ const DT = PHYSICS.FIXED_DT;
 /**
  * @param {object} map
  * @param {Array<{x,y,z, run?: boolean}>} starts pontos de partida (run: começa correndo até o pad)
- * @param {number} limit metade do lado interno do mapa (m): |x| ou |z| maior que isso = saiu
+ * @param {number|{x: number, z: number}} limit metade do lado interno do mapa (m): |x| ou |z|
+ *   maior que isso = saiu. Um número vale para os dois eixos.
  * @returns {{ tries: number, escapes: Array, maxHeight: number }}
  */
 export function searchEscapes(map, starts, limit) {
+  const lim = typeof limit === 'number' ? { x: limit, z: limit } : limit;
   const escapes = [];
   let tries = 0;
   let maxHeight = 0;
@@ -35,7 +37,7 @@ export function searchEscapes(map, starts, limit) {
               const dash = ds !== null && Math.abs(t - ds) < DT / 2;
               stepPlayer(p, { ...emptyInput(), moveZ: 1, yaw, jump: press, jumpPressed: press, dashPressed: dash }, map, DT);
               maxHeight = Math.max(maxHeight, p.pos.y);
-              if (Math.abs(p.pos.x) > limit || Math.abs(p.pos.z) > limit) {
+              if (Math.abs(p.pos.x) > lim.x || Math.abs(p.pos.z) > lim.z) {
                 escapes.push({ start: s, yaw, dj, ds, spam, at: { x: p.pos.x, y: p.pos.y, z: p.pos.z } });
                 break;
               }

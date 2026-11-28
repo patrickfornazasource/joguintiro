@@ -12,6 +12,7 @@ const CONTROLS = [
   ['Pular de lado numa parede ciano', 'correr na parede (Espaço sai dela)'],
   ['Espaço encostado numa parede no ar', 'pulo na parede (até 3 seguidos)'],
   ['Mouse', 'olhar'],
+  ['R', 'voltar à estação mais perto'],
   ['F3', 'painel de informações'],
   ['Esc', 'soltar o mouse'],
 ];
@@ -50,10 +51,26 @@ export function createStartScreen({ canvas, doc = document }) {
   const cta = doc.createElement('div');
   cta.textContent = 'Clique para jogar';
   Object.assign(cta.style, { margin: '8px 0 16px', fontSize: '20px', color: '#00e5ff' });
+  // Teclas em duas colunas (tecla em destaque, o que faz ao lado).
   const list = doc.createElement('div');
-  list.style.fontSize = '14px';
-  list.style.opacity = '0.85';
-  list.textContent = CONTROLS.map(([k, v]) => `${k}: ${v}`).join('   ·   ');
+  Object.assign(list.style, {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, auto)',
+    gap: '4px 28px',
+    fontSize: '13px',
+    textAlign: 'left',
+    opacity: '0.9',
+  });
+  for (const [k, v] of CONTROLS) {
+    const row = doc.createElement('div');
+    const key = doc.createElement('b');
+    key.textContent = `${k}: `;
+    key.style.color = '#00e5ff';
+    const what = doc.createElement('span');
+    what.textContent = v;
+    row.append(key, what);
+    list.append(row);
+  }
   box.append(title, cta, list);
   el.append(box);
   doc.body.appendChild(el);
