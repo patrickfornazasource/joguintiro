@@ -16,6 +16,7 @@
 import { MOVE, PLAYER } from '../constants.js';
 import { moveAndCollide, fitsWithHeight } from './collide.js';
 import { updateWall } from './walls.js';
+import { updateWallrun, endWallrun as endWallrunOnLanding } from './wallrun.js';
 import { wishDir, accelerate, airAccelerate, applyFriction, redirectHorizontal } from './move.js';
 
 /** Entrada vazia (nada apertado), útil como padrão e em testes. */
@@ -64,6 +65,10 @@ export function createPlayer(spawn) {
     sliding: false,
     /** Tempo até o próximo impulso de deslize valer (s). */
     slideCooldown: 0,
+    /** Corrida na parede em andamento: { box, normal, time }, ou null (F1-12). */
+    wallrun: null,
+    /** Última parede em que correu e há quanto tempo saiu: { box, age }, ou null. */
+    wallrunLast: null,
     /** Altura atual do corpo (m): PLAYER.HEIGHT em pé, PLAYER.CROUCH_HEIGHT agachado. */
     height: PLAYER.HEIGHT,
 
@@ -104,13 +109,17 @@ export function stepPlayer(p, input, map, dt) {
 
   // Pula se: está no chão (ou acabou de sair da borda) E apertou agora ou há pouco,
   // ou está no chão segurando o pulo (bunny hop: pula de novo ao pousar).
+  // Corrida na parede (F1-12): entrar, continuar, sair ou pular para fora. Tem prioridade.
+  const wallrunning = updateWallrun(p, input, dt); // 'running' | 'jumped' | null
+  const onWall = wallrunning !== null;
+
   const canJump = p.onGround || p.coyote > 0;
   const wantsJump = p.jumpBuffer > 0 || (input.jump && p.onGround);
-  const jumping = canJump && wantsJump;
+  const jumping = !onWall && canJump && wantsJump;
 
-  // Pulo duplo (F1-09): recarrega no chão; no ar, só com um aperto novo (segurar não gasta).
+  // Pulo duplo (F1-09): recarrega no chão (e ao entrar na parede); no ar, só com um aperto novo.
   if (p.onGround) p.jumpsLeft = MOVE.AIR_JUMPS;
-  const doubleJumping = !jumping && !p.onGround && input.jumpPressed && p.jumpsLeft > 0;
+  const doubleJumping = !onWall && !jumping && !p.onGround && input.jumpPressed && p.jumpsLeft > 0;
 
   // Deslize e agachar (F1-10).
   updateCrouch(p, input, map, jumping, dt);
@@ -121,7 +130,9 @@ export function stepPlayer(p, input, map, dt) {
   const wish = wishDir(input);
   const amount = Math.hypot(wish.x, wish.z); // 0 a 1 (teclado: 0 ou 1)
   const dir = amount > 0 ? { x: wish.x / amount, y: 0, z: wish.z / amount } : null;
-  if (p.sliding && !jumping) {
+  if (onWall) {
+    // A corrida na parede já cuidou da velocidade neste passo.
+  } else if (p.sliding && !jumping) {
     // Deslize: atrito baixo e sem aceleração pelas teclas, só um leve direcionamento.
     const v = applyFriction(p.vel, MOVE.SLIDE_FRICTION, 0, dt);
     p.vel = redirectHorizontal(v, dir, Math.min(1, MOVE.SLIDE_STEER * dt));
@@ -151,9 +162,10 @@ export function stepPlayer(p, input, map, dt) {
     p.events.push({ type: 'doubleJump' });
   }
 
-  stepBody(p, map, dt);
+  stepBody(p, map, dt, p.wallrun ? MOVE.WALLRUN_GRAVITY_SCALE : 1);
   updateWall(p, map, dt); // detector de parede (F1-11)
-  p.state = p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
+  if (p.wallrun && p.onGround) endWallrunOnLanding(p);
+  p.state = p.wallrun ? 'wallrun' : p.sliding ? 'slide' : !p.onGround ? 'air' : p.crouching ? 'crouch' : 'ground';
   return p;
 }
 
@@ -202,11 +214,12 @@ function updateCrouch(p, input, map, jumping, dt) {
  * Parte do passo que não depende da entrada: gravidade e colisão com o mapa.
  * Separada para testar a colisão sem as regras de movimento.
  */
-export function stepBody(p, map, dt) {
+export function stepBody(p, map, dt, gravityScale = 1) {
   // Gravidade sempre puxa, sem passar da velocidade máxima de queda. No chão, a colisão
   // zera a queda a cada passo; assim onGround fica estável (não pisca entre passos).
+  // gravityScale < 1 reduz a gravidade (corrida na parede, F1-12).
   const before = p.vel.y;
-  const after = Math.max(before - MOVE.GRAVITY * dt, -MOVE.MAX_FALL_SPEED);
+  const after = Math.max(before - MOVE.GRAVITY * gravityScale * dt, -MOVE.MAX_FALL_SPEED);
   // Na vertical, a posição anda pela média da velocidade no passo (exato para gravidade
   // constante): a altura do pulo bate com a fórmula v² / 2g (F1-07).
   const average = (before + after) / 2;

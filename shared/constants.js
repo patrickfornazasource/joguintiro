@@ -92,6 +92,26 @@ export const MOVE = Object.freeze({
   WALL_PROBE: 0.15,
   /** Por quanto tempo a última parede é lembrada depois de desencostar (s). */
   WALL_MEMORY: 0.15,
+  /** Velocidade mínima ao longo da parede para correr nela (m/s). */
+  WALLRUN_MIN_SPEED: 6,
+  /** Tempo máximo correndo numa parede (s). */
+  WALLRUN_MAX_TIME: 1.5,
+  /** Fração da gravidade durante a corrida na parede (0 a 1): quase não cai. */
+  WALLRUN_GRAVITY_SCALE: 0.12,
+  /** Ganho de velocidade ao longo da parede (m/s²). */
+  WALLRUN_ACCEL: 2,
+  /** Velocidade máxima alcançada só correndo na parede (m/s). */
+  WALLRUN_MAX_SPEED: 16,
+  /** Pulo da parede: empurrão para fora dela (m/s). */
+  WALLRUN_JUMP_OUT: 6.5,
+  /** Pulo da parede: velocidade para cima (m/s). */
+  WALLRUN_JUMP_UP: 7.5,
+  /** Tempo até poder voltar a correr na mesma parede (s). Parede diferente pode na hora. */
+  WALLRUN_REATTACH_DELAY: 0.3,
+  /** "Cola" contra a parede durante a corrida (m/s): mantém o contato. */
+  WALLRUN_STICK: 1,
+  /** Tecla apontando para longe da parede acima disto (0 a 1, alinhamento) solta da parede. */
+  WALLRUN_RELEASE_DOT: 0.5,
 });
 
 /** Câmera e mouse. */
@@ -104,6 +124,10 @@ export const VIEW = Object.freeze({
   FOV: 90,
   /** Rapidez com que a câmera abaixa ou sobe ao agachar e levantar (1/s). Só visual. */
   CROUCH_SMOOTH_RATE: 12,
+  /** Inclinação da câmera correndo na parede (rad), para o lado oposto à parede. */
+  WALLRUN_TILT: (10 * Math.PI) / 180,
+  /** Rapidez com que a câmera inclina e desinclina (1/s). Só visual. */
+  TILT_SMOOTH_RATE: 10,
 });
 
 /** Rede. */

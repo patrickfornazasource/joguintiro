@@ -71,6 +71,8 @@ const sensitivity = resolveSensitivity(window.location.search, storage);
 
 // Jogador local no primeiro ponto de nascimento do mapa.
 const me = createLocalPlayer({ map, sensitivity });
+// Em desenvolvimento, o jogador local fica acessível no console (depuração e testes visuais).
+if (import.meta.env.DEV) window.__me = me;
 createStartScreen({ canvas });
 const deg = (rad) => Math.round((rad * 180) / Math.PI);
 let lastFrame = performance.now();
@@ -112,7 +114,7 @@ const loop = createLoop({
     me.look(mouse.x, mouse.y);
     const eye = me.eye(alpha, frameDt);
     camera.position.set(eye.x, eye.y, eye.z);
-    camera.rotation.set(me.pitch, me.yaw, 0);
+    camera.rotation.set(me.pitch, me.yaw, me.roll);
     renderer.render(scene, camera);
     const p = me.player;
     debug.set('posição', p.pos);
@@ -123,7 +125,7 @@ const loop = createLoop({
     debug.set('parede', p.wall
       ? `${SIDES[p.wall.side]} (${p.wall.type})${p.wall.age > 0 ? ` lembrada ${p.wall.age.toFixed(2)} s` : ''}`
       : '-');
-    debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado' }[p.state] ?? p.state);
+    debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado', wallrun: 'correndo na parede' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
     debug.set('sensibilidade', me.sensitivity.toFixed(4));
     debug.set('renasceu', me.respawns);
