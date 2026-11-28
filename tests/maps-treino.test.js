@@ -288,3 +288,36 @@ test('nada sai do mapa a partir das estações (varredura: pulo, duplo, dash, pu
   const r = searchEscapes(M, starts, 100); // faces internas das paredes externas em ±100
   assert.deepEqual(r.escapes, [], `saiu em ${r.escapes.length} de ${r.tries}`);
 });
+
+test('estação 6, como a placa ensina: de qualquer ponto do X, Espaço e, no alto, Espaço + D alcançam a plataforma', () => {
+  // Achado do Testador: com o segundo Espaço logo em seguida, não chega. A placa e o roteiro agora
+  // dizem "no alto". Este teste trava que, assim, todo o X funciona (sem dash).
+  const run = (x, early) => {
+    const p = createPlayer({ x, y: S.perch.top, z: -31.5, yaw: 0 });
+    stepPlayer(p, input({ yaw: 0 }), M, DT);
+    let slammed = false;
+    let landed = false;
+    let doubled = false;
+    let since = 0;
+    for (let i = 0; i < 6 / DT; i++) {
+      let inp;
+      if (!slammed) {
+        slammed = !p.onGround && p.pos.z < -36.2;
+        inp = slammed ? input({ yaw: 0, crouch: true, crouchPressed: true }) : input({ yaw: 0, moveZ: 1 });
+      } else if (!landed) {
+        landed = has(p, 'slamLand');
+        inp = landed ? input({ yaw: 0, moveX: 1, jump: true, jumpPressed: true }) : input({ yaw: 0, crouch: true });
+      } else {
+        since += DT;
+        const now = !doubled && !p.onGround && (early ? since >= 0.15 : p.vel.y < 0.5);
+        if (now) doubled = true;
+        inp = input({ yaw: 0, moveX: 1, jump: now, jumpPressed: now });
+      }
+      stepPlayer(p, inp, M, DT);
+      if (landed && doubled && p.onGround) return p.pos.y > S.target.top - 0.1;
+    }
+    return false;
+  };
+  for (let x = 70.4; x <= 73.6 + 1e-9; x += 0.4) assert.ok(run(x, false), `x = ${x.toFixed(1)}: no alto, chega`);
+  assert.equal(run(72, true), false, 'com o segundo Espaço rápido demais (0,15 s), não chega');
+});

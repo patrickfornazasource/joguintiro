@@ -140,3 +140,29 @@ test('pular embaixo de um teto baixo: bate a cabeça e volta', () => {
   assert.ok(top + p.height <= 2 + 1e-9, `cabeça passou do teto: ${top + p.height}`);
   assert.equal(p.onGround, true);
 });
+
+// Achado do Testador (validação da F1): parado, segurando W + Espaço, o bunny hop ficava lento
+// (o pulo é o único passo de chão de cada salto). Agora o passo do pulo, abaixo da velocidade
+// de andar, chega à velocidade de andar de uma vez; acima dela, nada muda.
+test('bunny hop parado (W + Espaço juntos) chega à velocidade de andar no primeiro pulo', () => {
+  const p = createPlayer({ x: 0, y: 0, z: 0, yaw: 0 });
+  stepPlayer(p, emptyInput(), floorMap, DT);
+  let at1s = 0;
+  let max = 0;
+  for (let i = 1; i <= 4 / DT; i++) {
+    stepPlayer(p, input({ moveZ: 1, yaw: 0, jump: true, jumpPressed: i === 1 }), floorMap, DT);
+    const s = Math.hypot(p.vel.x, p.vel.z);
+    max = Math.max(max, s);
+    if (i === Math.round(1 / DT)) at1s = s;
+  }
+  assert.ok(Math.abs(at1s - MOVE.WALK_SPEED) < 1e-9, `em 1 s: ${at1s}`);
+  assert.ok(max <= MOVE.WALK_SPEED + 1e-9, `nunca passa da velocidade de andar: ${max}`);
+});
+
+test('pulo devagar de lado não ganha velocidade: o total fica na velocidade de andar', () => {
+  const p = createPlayer({ x: 0, y: 0, z: 0, yaw: 0 });
+  stepPlayer(p, emptyInput(), floorMap, DT);
+  p.vel = { x: 5, y: 0, z: 0 }; // 5 m/s de lado, apertando W (para -z)
+  stepPlayer(p, input({ moveZ: 1, yaw: 0, jump: true, jumpPressed: true }), floorMap, DT);
+  assert.ok(Math.abs(Math.hypot(p.vel.x, p.vel.z) - MOVE.WALK_SPEED) < 1e-9, `${Math.hypot(p.vel.x, p.vel.z)}`);
+});

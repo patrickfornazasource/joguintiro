@@ -168,7 +168,7 @@ export const treino = Object.freeze({
     { x: 21.9, y: 2.6, z: 80, yaw: EAST, title: '3 · Deslize', lines: ['Corra e aperte C antes do túnel baixo:', 'em pé não passa, deslizando passa.'] },
     { x: 81.6, y: 3.6, z: 40, yaw: SOUTH, title: '4 · Corrida na parede', lines: ['Encostado à esquerda, corra, pule e puxe A.', 'Na parede, espere um instante e Espaço.'] },
     { x: 82.5, y: 2.6, z: -8.5, yaw: Math.atan2(-5.5, 9), title: '5 · Pulo na parede', lines: ['Entre no vão e pule. Encostado: Espaço', 'de novo (até 3). Suba na plataforma.'] },
-    { x: 72, y: 5.2, z: -24, yaw: SOUTH, title: '6 · Slam e pulo de slam', lines: ['Suba a torre e caia no X amarelo com C.', 'Ao bater: Espaço, e Espaço no ar. Vá para a direita.'] },
+    { x: 72, y: 5.2, z: -24, yaw: SOUTH, title: '6 · Slam e pulo de slam', lines: ['Suba a torre e caia no X amarelo com C.', 'Bateu: Espaço. No alto: Espaço + D (direita).'] },
     { x: 56, y: 2.6, z: -77, yaw: WEST, title: '7 · Dash', lines: ['O vão é grande demais para um pulo só.', 'Pule, Espaço no ar (duplo) e Shift (dash).'] },
     { x: 8, y: 2.6, z: -77, yaw: WEST, title: '8 · Plataformas de salto', lines: ['Pise na plataforma verde.', 'Uma lança na outra até o outro lado.'] },
     { x: -77, y: 2.6, z: -51, yaw: NORTH, title: '9 · Escada com corrimão', lines: ['Suba a escada segurando W e, no alto,', 'puxe D (direita): você desce o corrimão.'] },

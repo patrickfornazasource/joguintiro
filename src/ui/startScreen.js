@@ -5,7 +5,7 @@ const CONTROLS = [
   ['W A S D', 'andar'],
   ['Espaço', 'pular (segure para emendar; de novo no ar: pulo duplo)'],
   ['A/D + mouse no ar', 'curvar e ganhar velocidade'],
-  ['C ou Ctrl', 'agachar; correndo: deslizar; no ar: golpe no chão'],
+  ['C', 'agachar; correndo: deslizar; no ar: golpe no chão'],
   ['Espaço logo depois do golpe', 'pulo de slam (mais alto quanto maior a queda)'],
   ['Shift', 'dash para o lado das teclas (3 cargas, provisório)'],
   ['Corrimão laranja', 'cair ou deslizar em cima dele para descer (Espaço sai)'],

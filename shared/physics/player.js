@@ -229,7 +229,19 @@ export function stepPlayer(p, input, map, dt, cfg = MOVE) {
   } else if (p.onGround || jumping) {
     const v = jumping ? { ...p.vel } : applyFriction(p.vel, cfg.FRICTION, cfg.STOP_SPEED, dt);
     const target = p.crouching ? cfg.CROUCH_SPEED : cfg.WALK_SPEED; // agachado anda devagar
-    p.vel = dir ? accelerate(v, dir, target * amount, cfg.GROUND_ACCEL, dt) : v;
+    const wish = target * amount;
+    const speed = Math.hypot(v.x, v.z);
+    if (dir && jumping && speed < wish) {
+      // Pulo parado ou devagar (bunny hop desde o começo): o pulo é o único passo de chão, então
+      // a aceleração do chão vale de uma vez até a velocidade de andar (andando, ela chega lá em
+      // ~1/GROUND_ACCEL s). Nunca passa da velocidade de andar: acima dela, nada muda.
+      const a = accelerate(v, dir, wish, cfg.GROUND_ACCEL, 1 / cfg.GROUND_ACCEL);
+      const h = Math.hypot(a.x, a.z);
+      const k = h > wish ? wish / h : 1;
+      p.vel = { x: a.x * k, y: a.y, z: a.z * k };
+    } else {
+      p.vel = dir ? accelerate(v, dir, wish, cfg.GROUND_ACCEL, dt) : v;
+    }
   } else if (doubleJumping) {
     // Mistura a direção atual com a das teclas, sem perder velocidade.
     p.vel = redirectHorizontal(p.vel, dir, cfg.DOUBLE_JUMP_REDIRECT);
