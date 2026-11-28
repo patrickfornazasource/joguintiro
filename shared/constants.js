@@ -156,8 +156,11 @@ export const MOVE = Object.freeze({
   RAIL_SNAP_DIST: 0.6,
   /** Corrimão: aceleração da gravidade ao longo do trilho (m/s², multiplicada pela inclinação). */
   RAIL_GRAVITY_ACCEL: 10,
-  /** Corrimão: velocidade máxima no trilho (m/s). */
-  RAIL_MAX_SPEED: 28,
+  /**
+   * Corrimão: velocidade máxima no trilho (m/s). Igual ao limite geral (MAX_SPEED): o trilho
+   * nunca freia quem entra rápido (pedido do dono; antes era 28).
+   */
+  RAIL_MAX_SPEED: 45,
   /** Corrimão: velocidade para cima ao pular do trilho (m/s). */
   RAIL_EXIT_UP: 5,
   /** Corrimão: velocidade mínima a favor do trilho para grudar (m/s). */

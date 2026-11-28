@@ -81,7 +81,7 @@ export const STAIR_RAIL = Object.freeze({
 });
 
 /** Altura das paredes externas do Sandbox (m). Ver o comentário nas paredes. */
-export const OUTER_WALL_HEIGHT = 16;
+export const OUTER_WALL_HEIGHT = 20;
 
 export const sandbox = Object.freeze({
   id: 'sandbox',
@@ -89,8 +89,10 @@ export const sandbox = Object.freeze({
   boxes: [
     // Chão 60x60
     box(0, -0.5, 0, 60, 1, 60),
-    // Paredes externas, 16 m de altura (F1-16): com plataforma de salto (6 m), plataforma alta
-    // (6 m) e escalada (pulo + pulos na parede + duplo, até ~5,5 m), 6 m deixava sair do mapa.
+    // Paredes externas, 20 m de altura: com plataforma de salto (6 m), plataforma alta (6 m) e
+    // escalada (pulo + pulos na parede + duplo, até ~5,5 m), 6 m deixava sair do mapa (F1-16, 16 m).
+    // Com a corrida em todas as paredes (pedido do dono), a altura máxima foi de 10,9 m a 13,4 m:
+    // subiram para 20 m para manter a folga de segurança.
     box(0, OUTER_WALL_HEIGHT / 2, -29.5, 60, OUTER_WALL_HEIGHT, 1),
     box(0, OUTER_WALL_HEIGHT / 2, 29.5, 60, OUTER_WALL_HEIGHT, 1),
     box(-29.5, OUTER_WALL_HEIGHT / 2, 0, 1, OUTER_WALL_HEIGHT, 60),

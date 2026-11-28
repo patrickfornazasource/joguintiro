@@ -120,8 +120,19 @@ test('pular sai em diagonal: para fora e para cima, mantendo a velocidade ao lon
   assert.equal(p.jumpsLeft, MOVE.AIR_JUMPS, 'ainda tem o pulo duplo');
 });
 
-test('não entra: parede comum, devagar, de frente ou no chão', () => {
-  assert.equal(nearWall(10, mapWith(solidWall)).wallrun, null, 'parede comum (solid)');
+test('parede comum (cinza) também vale, se for mais alta que a cabeça (pedido do dono)', () => {
+  const p = nearWall(10, mapWith(solidWall));
+  assert.ok(p.wallrun, 'parede cinza alta: corre');
+  assert.ok(has(p, 'wallrunStart'));
+  // Parede cinza com o topo a 11 m: o jogador (pés a 10 m, cabeça a 11,8 m) passa dela.
+  const low = box(2.25, 0, 0, 0.5, 22, 400, T.SOLID);
+  assert.equal(nearWall(10, mapWith(low)).wallrun, null, 'parede cinza baixa (abaixo da cabeça): não corre');
+  // A parede de corrida (ciano) continua valendo mesmo baixa, como antes.
+  const lowRun = box(2.25, 0, 0, 0.5, 22, 400, T.WALLRUN);
+  assert.ok(nearWall(10, mapWith(lowRun)).wallrun, 'parede ciano baixa: corre (como antes)');
+});
+
+test('não entra: devagar, de frente ou no chão', () => {
   assert.equal(nearWall(MOVE.WALLRUN_MIN_SPEED - 1).wallrun, null, 'devagar');
   const headOn = createPlayer({ x: 2 - R - 0.3, y: 10, z: 0, yaw: -Math.PI / 2 });
   headOn.vel = { x: 12, y: 0, z: 0 };

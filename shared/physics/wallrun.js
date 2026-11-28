@@ -1,6 +1,7 @@
 // Corrida na parede (F1-12). Código puro (sem Three.js, sem DOM).
 //
-// Entrar: no ar, encostado agora numa parede `wallrun`, com velocidade ao longo dela
+// Entrar: no ar, encostado agora em qualquer parede (cinza, ciano ou externa; pedido do dono
+// depois da F1-20; as de outro tipo precisam ser mais altas que a cabeça), com velocidade ao longo dela
 // acima de WALLRUN_MIN_SPEED (de frente para a parede não entra), e fora do tempo de
 // espera para voltar à mesma parede. Ao entrar, recarrega o pulo duplo.
 // Durante: velocidade só ao longo da parede (mais uma leve "cola" contra ela), gravidade
@@ -99,7 +100,10 @@ export function updateWallrun(p, input, dt, cfg = MOVE) {
 
   // Entrar.
   const wall = p.wall;
-  if (p.onGround || !wall || wall.age !== 0 || wall.type !== T.WALLRUN) return null;
+  if (p.onGround || !wall || wall.age !== 0) return null;
+  // Toda parede vale (pedido do dono). Paredes que não são de corrida (cinza) precisam passar
+  // da cabeça: a lateral de um caixote baixo não vira corrida na parede.
+  if (wall.type !== T.WALLRUN && wall.box.max.y < p.pos.y + p.height) return null;
   const last = p.wallrunLast;
   const sameWallBlocked = last && last.box === wall.box
     && (last.exhausted || last.age < cfg.WALLRUN_REATTACH_DELAY);

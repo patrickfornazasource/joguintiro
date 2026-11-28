@@ -8,7 +8,7 @@ import { MOVE, PHYSICS, PLAYER } from '../constants.js';
 import { BOX_TYPES as T } from '../maps/format.js';
 import { forwardOf, rightOf } from './move.js';
 
-/** Tipos que contam como parede: só `wallrun` permite correr; `solid` permite pulo na parede. */
+/** Tipos que contam como parede (corrida na parede e pulo na parede). */
 const WALL_TYPES = new Set([T.SOLID, T.WALLRUN, T.UV]);
 
 const DIRECTIONS = [
