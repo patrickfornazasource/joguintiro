@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PHYSICS, PLAYER, DEMO, VIEW } from '../shared/constants.js';
+import { PHYSICS, PLAYER, DEMO, VIEW, MOVE } from '../shared/constants.js';
 import { createLoop } from './core/loop.js';
 import { attachInput, ACTIONS } from './core/input.js';
 import { createDebugPanel } from './ui/debug.js';
@@ -125,6 +125,8 @@ const loop = createLoop({
     debug.set('parede', p.wall
       ? `${SIDES[p.wall.side]} (${p.wall.type})${p.wall.age > 0 ? ` lembrada ${p.wall.age.toFixed(2)} s` : ''}`
       : '-');
+    debug.set('pulo duplo', p.jumpsLeft > 0 ? 'disponível' : 'usado');
+    debug.set('pulos na parede', `${p.wallJumpsLeft} de ${MOVE.WALL_JUMP_MAX}`);
     debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado', wallrun: 'correndo na parede' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
     debug.set('sensibilidade', me.sensitivity.toFixed(4));

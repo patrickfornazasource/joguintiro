@@ -260,3 +260,27 @@ test('depois de esgotar o tempo, grudar em outra parede vale na hora (e libera a
   assert.equal(p.wallrun.box, b);
   assert.equal(p.wallrunLast, null, 'a primeira foi liberada');
 });
+
+test('bater na ponta estreita de uma parede fina não vira corrida na parede (F1-13)', () => {
+  // Parede de 0,5 m de espessura ao longo de z; a "ponta" é a face de 0,5 m em z = 4.
+  const thin = box(0, 0, 0, 0.5, 60, 8, T.WALLRUN); // x de -0,25 a 0,25; z de -4 a 4
+  const map = mapWith(thin);
+  // Vindo de +z direto na ponta, deslizando de lado (em +x) rápido.
+  const p = createPlayer({ x: 0, y: 10, z: 4 + R + 0.2, yaw: 0 });
+  p.vel = { x: 8, y: 0, z: -6 };
+  let ranOnTip = false;
+  for (let i = 0; i < 20; i++) {
+    stepPlayer(p, input({ moveZ: 1, yaw: 0 }), map, DT);
+    ranOnTip ||= !!p.wallrun;
+  }
+  assert.equal(ranOnTip, false, 'não correu na ponta em nenhum momento');
+  // Na face longa da mesma parede, corre normalmente.
+  const q = createPlayer({ x: 0.25 + R + 0.2, y: 10, z: 2, yaw: 0 });
+  q.vel = { x: -2, y: 0, z: -10 };
+  let ran = false;
+  for (let i = 0; i < 20 && !ran; i++) {
+    stepPlayer(q, input({ moveZ: 1, yaw: 0 }), map, DT);
+    ran = !!q.wallrun;
+  }
+  assert.ok(ran, 'na face longa corre');
+});

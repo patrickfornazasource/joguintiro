@@ -112,6 +112,19 @@ export const MOVE = Object.freeze({
   WALLRUN_STICK: 1,
   /** Tecla apontando para longe da parede acima disto (0 a 1, alinhamento) solta da parede. */
   WALLRUN_RELEASE_DOT: 0.5,
+  /** Pulo na parede: empurrão para longe dela (m/s). */
+  WALL_JUMP_OUT: 7,
+  /** Pulo na parede: velocidade para cima (m/s). */
+  WALL_JUMP_UP: 7,
+  /** Pulos na parede seguidos, no máximo. Recarregam no chão ou ao correr numa parede nova. */
+  WALL_JUMP_MAX: 3,
+  /** Espera para pular de novo na MESMA parede (s). A parede do outro lado vale na hora. */
+  WALL_JUMP_SAME_WALL_DELAY: 0.3,
+  /**
+   * Comprimento mínimo da face da parede, na direção da corrida, para correr nela (m).
+   * Evita "correr" na ponta estreita de uma parede fina (0,5 m) ao bater nela de frente.
+   */
+  WALLRUN_MIN_FACE: 1,
 });
 
 /** Câmera e mouse. */

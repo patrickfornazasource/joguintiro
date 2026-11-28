@@ -96,6 +96,9 @@ export function updateWallrun(p, input, dt) {
   const sameWallBlocked = last && last.box === wall.box
     && (last.exhausted || last.age < MOVE.WALLRUN_REATTACH_DELAY);
   if (sameWallBlocked) return null;
+  // A face precisa ter comprimento para correr: a ponta estreita de uma parede fina não serve.
+  const faceAxis = wall.normal.x !== 0 ? 'z' : 'x';
+  if (wall.box.max[faceAxis] - wall.box.min[faceAxis] < MOVE.WALLRUN_MIN_FACE) return null;
   const t = alongWall(p.vel, wall.normal);
   if (Math.hypot(t.x, t.z) < MOVE.WALLRUN_MIN_SPEED) return null; // devagar ou de frente
 
@@ -103,6 +106,7 @@ export function updateWallrun(p, input, dt) {
   p.wallrunLast = null; // grudar em outra parede libera a anterior
   p.vel.y = 0; // entra sem subir nem cair: depois só a gravidade reduzida
   p.jumpsLeft = MOVE.AIR_JUMPS; // correr na parede recarrega o pulo duplo (GDD)
+  p.wallJumpsLeft = MOVE.WALL_JUMP_MAX; // e os pulos na parede (F1-13)
   p.jumpBuffer = 0;
   p.events.push({ type: 'wallrunStart' });
   runAlong(p, dt);

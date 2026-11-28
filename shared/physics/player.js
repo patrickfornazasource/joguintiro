@@ -75,6 +75,10 @@ export function createPlayer(spawn) {
     // Campos reservados para as próximas tarefas (ainda sem efeito):
     /** Pulos extras disponíveis no ar (pulo duplo, F1-09). */
     jumpsLeft: 0,
+    /** Pulos na parede ainda disponíveis (F1-13). Recarregam no chão ou ao correr numa parede. */
+    wallJumpsLeft: MOVE.WALL_JUMP_MAX,
+    /** Último pulo na parede: { box, age } (para a espera da mesma parede), ou null. */
+    lastWallJump: null,
     /**
      * Parede encostada agora ou lembrada (até MOVE.WALL_MEMORY s), ou null (F1-11).
      * { normal, type, side: 'left'|'right'|'front'|'back', distance, age }
@@ -117,9 +121,19 @@ export function stepPlayer(p, input, map, dt) {
   const wantsJump = p.jumpBuffer > 0 || (input.jump && p.onGround);
   const jumping = !onWall && canJump && wantsJump;
 
+  // Pulo na parede (F1-13): no ar, fora da corrida, encostado (ou na memória de 0,15 s) numa
+  // parede, com um aperto novo. Tem prioridade sobre o pulo duplo. Máximo WALL_JUMP_MAX seguidos.
+  if (p.onGround) p.wallJumpsLeft = MOVE.WALL_JUMP_MAX;
+  if (p.lastWallJump) p.lastWallJump.age += dt;
+  const sameWallTooSoon = p.wall && p.lastWallJump && p.lastWallJump.box === p.wall.box
+    && p.lastWallJump.age < MOVE.WALL_JUMP_SAME_WALL_DELAY;
+  const wallJumping = !onWall && !jumping && !p.onGround && input.jumpPressed
+    && p.wall !== null && !sameWallTooSoon && p.wallJumpsLeft > 0;
+
   // Pulo duplo (F1-09): recarrega no chão (e ao entrar na parede); no ar, só com um aperto novo.
   if (p.onGround) p.jumpsLeft = MOVE.AIR_JUMPS;
-  const doubleJumping = !onWall && !jumping && !p.onGround && input.jumpPressed && p.jumpsLeft > 0;
+  const doubleJumping = !onWall && !jumping && !wallJumping && !p.onGround && input.jumpPressed
+    && p.jumpsLeft > 0;
 
   // Deslize e agachar (F1-10).
   updateCrouch(p, input, map, jumping, dt);
@@ -132,6 +146,21 @@ export function stepPlayer(p, input, map, dt) {
   const dir = amount > 0 ? { x: wish.x / amount, y: 0, z: wish.z / amount } : null;
   if (onWall) {
     // A corrida na parede já cuidou da velocidade neste passo.
+  } else if (wallJumping) {
+    // Empurra para longe da parede e para cima, mantendo a velocidade ao longo dela.
+    const n = p.wall.normal;
+    const into = p.vel.x * n.x + p.vel.z * n.z;
+    p.vel.x = p.vel.x - into * n.x + n.x * MOVE.WALL_JUMP_OUT;
+    p.vel.z = p.vel.z - into * n.z + n.z * MOVE.WALL_JUMP_OUT;
+    p.vel.y = MOVE.WALL_JUMP_UP;
+    p.wallJumpsLeft -= 1;
+    p.jumpBuffer = 0;
+    p.coyote = 0;
+    // A parede usada sai da memória e fica em espera (WALL_JUMP_SAME_WALL_DELAY).
+    p.lastWallJump = { box: p.wall.box, age: 0 };
+    p.wall = null;
+    p.wallAge = Infinity;
+    p.events.push({ type: 'wallJump' });
   } else if (p.sliding && !jumping) {
     // Deslize: atrito baixo e sem aceleração pelas teclas, só um leve direcionamento.
     const v = applyFriction(p.vel, MOVE.SLIDE_FRICTION, 0, dt);
