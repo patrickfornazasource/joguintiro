@@ -119,6 +119,10 @@ const loop = createLoop({
     debug.set('velocidade (m/s)', Math.hypot(p.vel.x, p.vel.z));
     debug.set('queda (m/s)', p.vel.y);
     debug.set('no chão', p.onGround ? 'sim' : 'não');
+    const SIDES = { left: 'esquerda', right: 'direita', front: 'frente', back: 'trás' };
+    debug.set('parede', p.wall
+      ? `${SIDES[p.wall.side]} (${p.wall.type})${p.wall.age > 0 ? ` lembrada ${p.wall.age.toFixed(2)} s` : ''}`
+      : '-');
     debug.set('estado', { ground: 'no chão', air: 'no ar', slide: 'deslizando', crouch: 'agachado' }[p.state] ?? p.state);
     debug.set('olhar (graus)', `${deg(me.yaw)} / ${deg(me.pitch)}`);
     debug.set('sensibilidade', me.sensitivity.toFixed(4));
